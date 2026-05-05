@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Server Universal</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #0f172a;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --success: #10b981;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--light); color: var(--secondary); line-height: 1.6; }
+        
+        nav { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1rem 2rem; position: sticky; top: 0; z-index: 100; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        .nav-links { display: flex; gap: 2rem; list-style: none; }
+        .nav-links a { text-decoration: none; color: var(--secondary); font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--primary); }
+        
+        .hero { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; padding: 4rem 2rem; text-align: center; }
+        .hero h1 { font-size: 3rem; margin-bottom: 1rem; }
+        .hero p { font-size: 1.25rem; max-width: 900px; margin: 0 auto 1.5rem; opacity: 0.9; }
+        .hero-badges { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; }
+        .badge { background: rgba(255,255,255,0.2); padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; }
+        
+        .repo-link { background: white; padding: 1.5rem 2rem; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        .repo-link a { color: var(--primary); font-weight: 600; text-decoration: none; font-size: 1.1rem; }
+        .repo-link a:hover { text-decoration: underline; }
+        
+        .section { max-width: 1200px; margin: 0 auto; padding: 4rem 2rem; }
+        .section-title { font-size: 2rem; margin-bottom: 2rem; color: var(--secondary); border-bottom: 3px solid var(--primary); padding-bottom: 0.5rem; }
+        
+        .step { background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .step h3 { margin-bottom: 1rem; display: flex; align-items: center; }
+        .step-number { background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-right: 1rem; font-weight: 600; }
+        pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 6px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 0.9rem; margin-top: 1rem; }
+        
+        .client-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        @media (max-width: 768px) { .client-grid { grid-template-columns: 1fr; } }
+        .client-card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .client-card h3 { margin-bottom: 1rem; color: var(--primary); }
+        
+        .ready-box { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; padding: 3rem 2rem; text-align: center; border-radius: 12px; margin-top: 2rem; }
+        .ready-box h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .ready-box p { font-size: 1.2rem; max-width: 800px; margin: 0 auto 1.5rem; opacity: 0.95; }
+        .client-icons { display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap; margin-top: 1.5rem; font-weight: 600; font-size: 1.1rem; }
+        
+        footer { background: var(--secondary); color: white; padding: 3rem 2rem; text-align: center; margin-top: 4rem; }
+        .footer-links { display: flex; justify-content: center; gap: 2rem; margin: 1rem 0; list-style: none; }
+        .footer-links a { color: #94a3b8; text-decoration: none; }
+        .footer-links a:hover { color: white; }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <div class="logo">MCP Server Universal</div>
+            <ul class="nav-links">
+                <li><a href="#install">Instalação</a></li>
+                <li><a href="#config">Configuração</a></li>
+                <li><a href="#use">Bora Usar</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>Converta QUALQUER API em um Servidor MCP</h1>
+        <p>Sem escrever código. Apenas configure a URL da especificação e pronto — sua API estará disponível como ferramentas MCP para LLMs <strong>em segundos</strong>.</p>
+        <div class="hero-badges">
+            <span class="badge">⚡ Conversão em segundos</span>
+            <span class="badge">✨ Zero código</span>
+            <span class="badge">🔗 Múltiplas APIs</span>
+        </div>
+    </section>
+
+    <div class="repo-link">
+        <p>🔗 Repositório no GitHub: 
+            <a href="https://github.com/mvninull/open-mcp" target="_blank">https://github.com/mvninull/open-mcp</a>
+        </p>
+    </div>
+
+    <section class="section" id="install">
+        <h2 class="section-title">Instalação via Git</h2>
+        <p style="margin-bottom: 2rem; color: var(--gray);">Clone o repositório e tenha tudo configurado em minutos.</p>
+        
+        <div class="step">
+            <h3><span class="step-number">1</span> Clonar o Repositório</h3>
+            <pre>git clone https://github.com/mvninull/open-mcp.git
+cd open-mcp</pre>
+        </div>
+        
+        <div class="step">
+            <h3><span class="step-number">2</span> Executar Instalação (Cross-platform)</h3>
+            <pre># Linux/macOS
+chmod +x setup.sh
+./setup.sh
+
+# Windows (PowerShell)
+.\setup.ps1
+
+# Ou via Makefile (se tiver make instalado)
+make install</pre>
+        </div>
+        
+        <div class="step">
+            <h3><span class="step-number">3</span> Pronto! Verificar Instalação</h3>
+            <p>O script instala automaticamente:</p>
+            <ul style="padding-left: 2rem; margin-top: 0.5rem; color: var(--gray);">
+                <li>Python venv com fastmcp, httpx e pydantic</li>
+                <li>Node.js swagger2openapi globalmente</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="section" id="config" style="background: white;">
+        <h2 class="section-title">Configuração no Cliente MCP (JSON)</h2>
+        <p style="margin-bottom: 2rem; color: var(--gray);">Adicionar a configuração no ficheiro JSON do teu cliente MCP preferido. O servidor será spawnado automaticamente quando o cliente precisar.</p>
+        
+        <div class="client-grid">
+            <div class="client-card">
+                <h3>VS Code / OpenCode</h3>
+                <p style="color: var(--gray); margin-bottom: 1rem;">Edite <code>settings.json</code>:</p>
+                <pre>{
+  "mcp.servers": {
+    "minha-api": {
+      "command": "${workspaceFolder}/venv/Scripts/python.exe",
+      "args": ["${workspaceFolder}/main.py"],
+      "env": {
+        "MCP_SPEC_URL": "https://petstore.swagger.io/v2/swagger.json",
+        "MCP_SERVER_NAME": "PetStore API"
+      }
+    }
+  }
+}</pre>
+            </div>
+            
+            <div class="client-card">
+                <h3>Claude Desktop</h3>
+                <p style="color: var(--gray); margin-bottom: 1rem;">Edite <code>claude_desktop_config.json</code>:</p>
+                <pre>{
+  "mcpServers": {
+    "minha-api": {
+      "command": "/caminho/para/venv/Scripts/python.exe",
+      "args": ["/caminho/para/main.py"],
+      "env": {
+        "MCP_SPEC_URL": "http://localhost:8000/openapi.json",
+        "MCP_SERVER_NAME": "Loja API Local"
+      }
+    }
+  }
+}</pre>
+            </div>
+        </div>
+        
+        <div class="step" style="margin-top: 2rem;">
+            <h3><span class="step-number">💡</span> Múltiplas APIs? Sem problemas!</h3>
+            <p style="color: var(--gray);">Basta adicionar mais entradas no JSON do cliente. Cada API é um servidor independente que aponta para uma especificação diferente.</p>
+        </div>
+    </section>
+
+    <section class="section" id="use">
+        <h2 class="section-title">Já está instalado. Bora usar!</h2>
+        <p style="margin-bottom: 2rem; color: var(--gray); text-align: center;">Como tudo já está configurado, basta fazeres um pedido diretamente no teu cliente MCP preferido.</p>
+        
+        <div class="ready-box">
+            <h2>🚀 Bora Usar!</h2>
+            <p>O servidor já está instalado e configurado. Agora é só abrir o teu cliente e mandar um pedido — as ferramentas MCP estarão disponíveis automaticamente.</p>
+            
+            <div class="client-icons">
+                <span>💬 Claude</span>
+                <span>💻 VS Code</span>
+                <span>🤖 Codex</span>
+                <span>🔧 Cline</span>
+            </div>
+            
+            <div style="margin-top: 2rem; background: rgba(255,255,255,0.1); padding: 1.5rem; border-radius: 8px; text-align: left;">
+                <h3 style="margin-bottom: 1rem;">Exemplo de pedido no cliente:</h3>
+                <pre style="background: rgba(0,0,0,0.2); color: white;">"Liste todos os produtos disponíveis na loja local"
+"Mostre os pets disponíveis na PetStore"
+"Crie um novo produto na Loja API"</pre>
+                <p style="margin-top: 1rem; opacity: 0.9;">O LLM usará automaticamente as ferramentas MCP geradas para chamar os endpoints das tuas APIs!</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <h3>MCP Server Universal</h3>
+        <p>Versão 1.0.0</p>
+        <ul class="footer-links">
+            <li><a href="https://github.com/mvninull/open-mcp" target="_blank">GitHub Repo</a></li>
+            <li><a href="https://gofastmcp.com" target="_blank">FastMCP Docs</a></li>
+            <li><a href="https://modelcontextprotocol.io" target="_blank">MCP Protocol</a></li>
+            <li><a href="README.md">Documentação</a></li>
+        </ul>
+        <p>&copy; 2026 MCP Server Universal</p>
+    </footer>
+</body>
+</html>
