@@ -10,11 +10,57 @@ Servidor MCP genérico que converte automaticamente qualquer API OpenAPI/Swagger
 - **⚡ Conversão em Segundos**: Sua API vira servidor MCP instantaneamente, pronta para uso
 - **🔗 Múltiplas APIs**: Configure várias APIs no mesmo cliente MCP, cada uma com seu próprio servidor
 - **🔄 Conversão Automática**: Swagger2.0 desatualizado? Convertido automaticamente para OpenAPI 3.0
-- **📱 Exemplo Prático**: Compare a PetStore API (Swagger 2.0 externa) com a Loja API local (OpenAPI 3.0 atualizada)
+- **🌐 Três Transportes**: Suporte completo a STDIO, HTTP e SSE para diferentes cenários
+
+## 🚀 Canais de Transporte (STDIO, HTTP, SSE)
+
+O MCP Server Universal suporta três modos de transporte, cada um ideal para diferentes cenários:
+
+| Transporte | Uso Principal | Ciclo de Vida | Inspector (`--inspect`) |
+|------------|---------------|---------------|------------------------|
+| **STDIO** | Produção com cliente MCP (VS Code, Claude) | Cliente spawna/killa processo | Inspector spawna processo diretamente |
+| **HTTP** | Servidor independente / Host remoto | Contínuo (até parar manualmente) | Servidor HTTP + Inspector no browser |
+| **SSE** | Server-Sent Events / Tempo real | Contínuo (até parar manualmente) | Servidor SSE + Inspector no browser |
+
+### STDIO (Padrão - Mais Comum)
+
+Ideal para integração direta com clientes MCP locais:
+
+```bash
+# Sem inspect (produção - cliente MCP spawna)
+python main.py
+
+# Com inspect (desenvolvimento - Inspector spawna diretamente)
+python main.py --inspect --transport stdio
+```
+
+### HTTP (Servidor Independente)
+
+Ideal quando o servidor precisa rodar de forma contínua:
+
+```bash
+# Sem inspect (produção - servidor contínuo)
+python main.py --transport http --port 8081
+
+# Com inspect (desenvolvimento - servidor + Inspector)
+python main.py --inspect --transport http --port 8081
+```
+
+### SSE (Server-Sent Events)
+
+Ideal para comunicação em tempo real via SSE:
+
+```bash
+# Sem inspect (produção - servidor contínuo)
+python main.py --transport sse --port 8081
+
+# Com inspect (desenvolvimento - servidor + Inspector)
+python main.py --inspect --transport sse --port 8081
+```
+
+---
 
 ## ⚠️ IMPORTANTE: Entenda o Fluxo
-
-Este projeto suporta os dois principais transportes do MCP:
 
 ### Transporte stdio (padrão - mais comum)
 O servidor é **passivo** e fica subordinado ao ciclo de vida do cliente:
@@ -238,13 +284,9 @@ O script:
 
 ### 🟢 Produção (Uso Real)
 
-**Você NÃO roda o servidor manualmente.**
+**STDIO (Padrão - Cliente spawna)**
 
-O que você faz:
-
-1. **Instala** o projeto (passos acima)
-2. **Configura** o cliente MCP (VS Code, Claude, etc.) apontando para o `main.py`
-3. **O cliente ativa o servidor** automaticamente quando precisar
+O servidor é ativado automaticamente pelo cliente MCP:
 
 ```
 Você: Configura o settings.json do VS Code
@@ -253,7 +295,7 @@ Você: Configura o settings.json do VS Code
 VS Code: "Preciso de tools da API"
   │
   ▼
-VS Code: Spawna python main.py (com env vars)
+VS Code: Spawna python main.py --transport stdio (com env vars)
   │
   ▼
 Servidor: Carrega spec, converte se necessário, responde
@@ -265,25 +307,60 @@ VS Code: Recebe tools, mostra para o LLM usar
 [Quando desconectar, o servidor morre automaticamente]
 ```
 
-### 🔵 Desenvolvimento (Testes)
+**HTTP/SSE (Servidor Independente)**
 
-**Você RODA manualmente** para testar e inspecionar as tools.
+O servidor roda continuamente, você inicia manualmente:
 
 ```bash
-# Seta as variáveis no terminal
+# Terminal: iniciar servidor (HTTP)
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
+python main.py --transport http --port 8081
 
-# Roda o Inspector para ver as tools no browser
-python main.py --inspect
+# Ou para SSE:
+python main.py --transport sse --port 8081
 ```
 
-|                | Produção                     | Desenvolvimento            |
-| -------------- | ---------------------------- | -------------------------- |
-| **Quem ativa** | Cliente MCP (automático)     | Você (manual)              |
-| **Comando**    | Nenhum — cliente faz         | `python main.py --inspect` |
-| **Propósito**  | LLM usar a API               | Você ver/debugar as tools  |
-| **Duração**    | Vivo só durante a requisição | Vivo até fechar o browser  |
+O cliente MCP conecta no servidor via HTTP/SSE em `http://localhost:8081`.
+
+### 🔵 Desenvolvimento (Testes)
+
+**Você RODA manualmente** para testar e inspecionar as tools com `--inspect`.
+
+#### STDIO + Inspector
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --inspect --transport stdio
+```
+
+#### HTTP + Inspector
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --inspect --transport http --port 8081
+```
+
+#### SSE + Inspector
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --inspect --transport sse --port 8081
+```
+
+> O Inspector abrirá em `http://localhost:6274` em todos os casos.
+
+### Comparação: Produção vs Desenvolvimento
+
+|                | Produção STDIO       | Produção HTTP/SSE        | Desenvolvimento (Inspector)      |
+| -------------- | -------------------- | ------------------------ | --------------------------------- |
+| **Quem ativa** | Cliente MCP (auto)   | Você (manual)            | Você (manual)                     |
+| **Comando**    | Nenhum (cliente faz) | `python main.py --transport [http\|sse]` | `python main.py --inspect --transport [stdio\|http\|sse]` |
+| **Propósito**  | LLM usar a API       | LLM usar a API          | Você ver/debugar as tools         |
+| **Duração**    | Vivo durante uso     | Contínuo até parar      | Vivo até fechar o Inspector       |
 
 ---
 
@@ -344,6 +421,41 @@ Edite o arquivo `settings.json`:
 }
 ```
 
+#### Configuração HTTP/SSE (Servidor Independente)
+
+Para usar HTTP ou SSE, inicie o servidor manualmente e configure o cliente para conectar:
+
+**Terminal: Iniciar servidor HTTP**
+```bash
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --transport http --port 8081
+```
+
+**VS Code settings.json (HTTP)**
+```json
+{
+  "mcp.servers": {
+    "petstore-http": {
+      "url": "http://localhost:8081"
+    }
+  }
+}
+```
+
+**VS Code settings.json (SSE)**
+```json
+{
+  "mcp.servers": {
+    "petstore-sse": {
+      "url": "http://localhost:8081"
+    }
+  }
+}
+```
+
+> **Nota**: Para HTTP/SSE, o servidor deve estar rodando antes do cliente conectar.
+
 ### Claude Desktop
 
 Edite o arquivo de configuração:
@@ -372,57 +484,6 @@ Edite o arquivo de configuração:
   }
 }
 ```
-%APPDATA%\Code\User\settings.json
-```
-
-**Mac:**
-
-```
-~/Library/Application Support/Code/User/settings.json
-```
-
-**Linux:**
-
-```
-~/.config/Code/User/settings.json
-```
-
-#### Configuração mínima (produção)
-
-```json
-{
-  "mcp.servers": {
-    "petstore-api": {
-      "command": "C:\\Users\\matias.fernando\\Documents\\case\\venv\\Scripts\\python.exe",
-      "args": ["main.py"],
-      "env": {
-        "MCP_SPEC_URL": "https://petstore.swagger.io/v2/swagger.json",
-        "MCP_SERVER_NAME": "PetStore API"
-      }
-    }
-  }
-}
-```
-
-> **Nota**: O VS Code vai spawnar `python main.py` automaticamente quando o LLM precisar das tools. Você não precisa rodar nada manualmente.
-
-#### Configuração com caminho relativo (workspace)
-
-```json
-{
-  "mcp.servers": {
-    "petstore-api": {
-      "command": "${workspaceFolder}/venv/Scripts/python.exe",
-      "args": ["${workspaceFolder}/main.py"],
-      "env": {
-        "MCP_SPEC_URL": "https://petstore.swagger.io/v2/swagger.json",
-        "MCP_SERVER_NAME": "PetStore API"
-      }
-    }
-  }
-}
-```
-
 ### Claude Desktop
 
 Edite o arquivo de configuração:
@@ -456,6 +517,41 @@ Edite o arquivo de configuração:
 
 > **Nota**: O Claude Desktop vai spawnar o servidor quando o usuário fizer uma pergunta que precise da API. O servidor morre após responder.
 
+#### Claude Desktop HTTP/SSE (Servidor Independente)
+
+Para HTTP/SSE, inicie o servidor manualmente:
+
+**Terminal: Iniciar servidor HTTP**
+```bash
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --transport http --port 8081
+```
+
+**Claude config (HTTP)**
+```json
+{
+  "mcpServers": {
+    "petstore-http": {
+      "url": "http://localhost:8081"
+    }
+  }
+}
+```
+
+**Claude config (SSE)**
+```json
+{
+  "mcpServers": {
+    "petstore-sse": {
+      "url": "http://localhost:8081"
+    }
+  }
+}
+```
+
+> **Nota**: Para HTTP/SSE, o servidor deve estar rodando antes do Claude Desktop conectar.
+
 ### Cursor
 
 Edite o arquivo `~/.cursor/mcp.json`:
@@ -488,34 +584,94 @@ Use o modo Inspector para **testar e visualizar** as tools antes de configurar n
 - Quer debugar problemas na spec
 - Está desenvolvendo uma nova API e quer ver como fica no MCP
 
-### Como usar
+### Como usar com `--inspect`
 
-```bash
-# 1. Seta as variáveis no terminal
-$env:MCP_SPEC_URL = "http://localhost:8000/openapi.json"
-$env:MCP_SERVER_NAME = "Minha API Local"
+O flag `--inspect` lança o MCP Inspector integrado, permitindo testar as ferramentas no browser.
 
-# 2. Roda o Inspector
-python main.py --inspect
+#### STDIO (Inspector spawna processo diretamente)
+
+No modo STDIO com `--inspect`, o Inspector gerencia o servidor:
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --inspect --transport stdio
 ```
 
-O Inspector abrirá automaticamente no navegador em `http://localhost:6274`.
+#### HTTP (Servidor HTTP + Inspector)
 
-### Exemplo com PetStore
+No modo HTTP com `--inspect`, o servidor roda continuamente e o Inspector conecta via HTTP:
 
-```bash
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --inspect --transport http --port 8081
+```
+
+#### SSE (Servidor SSE + Inspector)
+
+No modo SSE com `--inspect`, o servidor roda continuamente e o Inspector conecta via Server-Sent Events:
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --inspect --transport sse --port 8081
+```
+
+> **Nota**: O Inspector abrirá automaticamente no navegador em `http://localhost:6274`.
+
+### Como usar sem `--inspect` (Produção)
+
+Sem o flag `--inspect`, o servidor roda em modo produção:
+
+#### STDIO (Padrão - Cliente spawna)
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --transport stdio
+```
+
+> O cliente MCP (VS Code, Claude) spawna o processo automaticamente.
+
+#### HTTP (Servidor Independente)
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --transport http --port 8081
+```
+
+> O servidor roda continuamente. Configure o cliente para conectar em `http://localhost:8081`.
+
+#### SSE (Servidor Independente)
+
+```powershell
+$env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
+$env:MCP_SERVER_NAME = "PetStore API"
+python main.py --transport sse --port 8081
+```
+
+> O servidor roda continuamente. Configure o cliente para conectar via SSE em `http://localhost:8081`.
+
+### Exemplos Práticos
+
+#### Com PetStore API (Swagger 2.0)
+
+```powershell
+# Terminal: configurar e rodar Inspector
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
 python main.py --inspect
 ```
 
-### Exemplo com API local
+#### Com API Local (OpenAPI 3.0)
 
 ```bash
-# Terminal 1: rode sua API
+# Terminal 1: rodar sua API local
 uvicorn main:app --reload --port 8000
 
-# Terminal 2: rode o Inspector
+# Terminal 2: rodar Inspector
 $env:MCP_SPEC_URL = "http://localhost:8000/openapi.json"
 $env:MCP_SERVER_NAME = "Minha API"
 python main.py --inspect
@@ -756,19 +912,19 @@ Use esta lista para verificar se tudo está configurado:
 
 ## Arquitetura
 
-### Fluxo de Produção - Transporte stdio (Padrão)
+### Fluxo de Produção - Transporte STDIO (Padrão)
 
-No transporte stdio, o servidor é um processo filho do cliente:
+No transporte STDIO, o servidor é um processo filho do cliente:
 
 ```
 ┌─────────────────┐
 │   Usuário       │ "Quero listar pets disponíveis"
 └────────┬────────┘
-          │
+           │
 ┌────────▼────────┐
 │   LLM/Agente    │ Precisa da tool "list_pets"
 └────────┬────────┘
-          │
+           │
 ┌────────▼────────┐     spawna     ┌──────────────────┐
 │   Cliente MCP   │ ──────────────► │  python main.py  │
 │  (VS Code/etc)  │  (com env vars) │                  │
@@ -784,23 +940,55 @@ No transporte stdio, o servidor é um processo filho do cliente:
 └─────────────────┘                 └──────────────────┘
 ```
 
-### Fluxo de Produção - Transporte SSE/HTTP
+**Comando**: `python main.py --transport stdio` (ou omitir `--transport`, padrão é STDIO)
 
-No transporte SSE/HTTP, o servidor roda de forma independente:
+### Fluxo de Produção - Transporte HTTP
+
+No transporte HTTP, o servidor roda de forma independente:
 
 ```
 ┌─────────────────┐
 │   Usuário       │ "Quero listar pets disponíveis"
 └────────┬────────┘
-          │
+           │
 ┌────────▼────────┐
 │   LLM/Agente    │ Precisa da tool "list_pets"
 └────────┬────────┘
-          │
+           │
 ┌────────▼────────┐                ┌──────────────────┐
 │   Cliente MCP   │ ── conecta ──► │  Servidor MCP    │
 │  (VS Code/etc)  │    via HTTP    │  (rodando em     │
-│                 │                │   host remoto)    │
+│                 │    :8081       │   host:port)     │
+│                 │ ◄───────────── │                  │
+│                 │   lista tools  │  • Responde via   │
+│                 │                │    HTTP           │
+│                 │ ─────────────► │                  │
+│                 │  chama tool    │  • Executa endpoint│
+│                 │                │  • Retorna via HTTP│
+│                 │ ◄───────────── │                  │
+│                 │   resultado    │  [contínuo]      │
+└─────────────────┘                 └──────────────────┘
+```
+
+**Comando**: `python main.py --transport http --port 8081`
+
+### Fluxo de Produção - Transporte SSE
+
+No transporte SSE (Server-Sent Events), o servidor envia eventos em tempo real:
+
+```
+┌─────────────────┐
+│   Usuário       │ "Quero listar pets disponíveis"
+└────────┬────────┘
+           │
+┌────────▼────────┐
+│   LLM/Agente    │ Precisa da tool "list_pets"
+└────────┬────────┘
+           │
+┌────────▼────────┐                ┌──────────────────┐
+│   Cliente MCP   │ ── conecta ──► │  Servidor MCP    │
+│  (VS Code/etc)  │    via SSE     │  (rodando em     │
+│                 │    :8081        │   host:port)     │
 │                 │ ◄───────────── │                  │
 │                 │   lista tools  │  • Responde via   │
 │                 │                │    Server-Sent     │
@@ -808,9 +996,11 @@ No transporte SSE/HTTP, o servidor roda de forma independente:
 │                 │  chama tool    │                  │
 │                 │                │  • Executa endpoint│
 │                 │ ◄───────────── │  • Retorna via SSE│
-│                 │   resultado    │                  │
-└─────────────────┘                └──────────────────┘
+│                 │   resultado    │  [contínuo]      │
+└─────────────────┘                 └──────────────────┘
 ```
+
+**Comando**: `python main.py --transport sse --port 8081`
 
 ### Fluxo de Desenvolvimento (Inspector)
 
@@ -818,7 +1008,7 @@ No transporte SSE/HTTP, o servidor roda de forma independente:
 ┌─────────────────┐
 │   Você          │ $env:MCP_SPEC_URL = "..."
 └────────┬────────┘         python main.py --inspect
-          │
+           │
 ┌────────▼────────┐
 │   Inspector     │ Abre browser em localhost:6274
 │                 │
@@ -831,6 +1021,8 @@ No transporte SSE/HTTP, o servidor roda de forma independente:
 │  └───────────┘  │
 └─────────────────┘
 ```
+
+**Com --inspect**: `python main.py --inspect --transport [stdio|http|sse] [--port 8081]`
 
 ---
 
