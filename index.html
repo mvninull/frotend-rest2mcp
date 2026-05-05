@@ -102,16 +102,21 @@ cd open-mcp</pre>
         </div>
         
         <div class="step">
-            <h3><span class="step-number">2</span> Executar Instalação (Cross-platform)</h3>
-            <pre># Linux/macOS
-chmod +x setup.sh
-./setup.sh
-
-# Windows (PowerShell)
-.\setup.ps1
-
-# Ou via Makefile (se tiver make instalado)
-make install</pre>
+            <h3><span class="step-number">2</span> Configurar Servidor MCP no Cliente</h3>
+            <p style="color: var(--gray); margin-bottom: 1rem;">Após clonar, configure o servidor no ficheiro JSON do teu cliente MCP (VS Code, Claude, etc.):</p>
+            <pre>{
+  "mcp.servers": {
+    "minha-api": {
+      "command": "${workspaceFolder}/venv/Scripts/python.exe",
+      "args": ["${workspaceFolder}/main.py"],
+      "env": {
+        "MCP_SPEC_URL": "https://petstore.swagger.io/v2/swagger.json",
+        "MCP_SERVER_NAME": "PetStore API"
+      }
+    }
+  }
+}</pre>
+            <p style="margin-top: 1rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.9rem; color: var(--gray);">💡 <strong>Dica:</strong> Podes configurar múltiplas APIs, cada uma com sua spec URL. O servidor será spawnado automaticamente pelo cliente.</p>
         </div>
         
         <div class="step">
@@ -172,7 +177,7 @@ make install</pre>
 
     <section class="section" id="use">
         <h2 class="section-title">Já está instalado. Bora usar!</h2>
-        <p style="margin-bottom: 2rem; color: var(--gray); text-align: center;">Como tudo já está configurado, basta fazeres um pedido diretamente no teu cliente MCP preferido.</p>
+        <p style="margin-bottom: 2rem; color: var(--gray); text-align: center;">Como tudo já está configurado e instalado, basta começares a conversar com o teu cliente MCP — as ferramentas estarão disponíveis automaticamente.</p>
         
         <div class="ready-box">
             <h2>🚀 Bora Usar!</h2>
