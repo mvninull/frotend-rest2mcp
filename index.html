@@ -1,0 +1,1826 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>rest2mcp</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0a0a0f;
+        --paper: #f5f4ef;
+        --accent: #1a56ff;
+        --accent2: #00d4aa;
+        --warn: #ff6b35;
+        --muted: #6b6b7a;
+        --border: rgba(10, 10, 15, 0.1);
+        --card-bg: #ffffff;
+        --mono: "JetBrains Mono", monospace;
+        --display: "Syne", sans-serif;
+        --body: "DM Sans", sans-serif;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 16px;
+        line-height: 1.65;
+        overflow-x: hidden;
+      }
+
+      /* ─── NAV ─── */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(245, 244, 239, 0.85);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+        padding: 0 2rem;
+      }
+      .nav-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+      }
+      .logo {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: var(--ink);
+        letter-spacing: -0.03em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .logo-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: inline-block;
+      }
+      .nav-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+      }
+      .nav-links a {
+        font-family: var(--display);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-decoration: none;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        transition: color 0.2s;
+      }
+      .nav-links a:hover {
+        color: var(--ink);
+      }
+
+      /* ─── HERO ─── */
+      .hero {
+        min-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 6rem 2rem 4rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background:
+          radial-gradient(
+            ellipse 60% 50% at 80% 20%,
+            rgba(26, 86, 255, 0.07) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 40% 40% at 10% 80%,
+            rgba(0, 212, 170, 0.06) 0%,
+            transparent 60%
+          );
+      }
+      .hero-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(var(--border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 60px 60px;
+        mask-image: radial-gradient(
+          ellipse 80% 80% at 50% 50%,
+          black 30%,
+          transparent 80%
+        );
+      }
+      .hero-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+      }
+      .hero-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        padding: 6px 14px;
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--accent);
+        margin-bottom: 2rem;
+        animation: fadeUp 0.6s ease both;
+      }
+      .hero-tag span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent2);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.3);
+        }
+      }
+
+      h1 {
+        font-family: var(--display);
+        font-size: clamp(3rem, 7vw, 6rem);
+        font-weight: 800;
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        margin-bottom: 1.5rem;
+        animation: fadeUp 0.7s 0.1s ease both;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .hero-sub {
+        font-size: 1.15rem;
+        font-weight: 300;
+        color: var(--muted);
+        max-width: 580px;
+        margin-bottom: 2.5rem;
+        animation: fadeUp 0.7s 0.2s ease both;
+      }
+
+      .hero-ctas {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        animation: fadeUp 0.7s 0.3s ease both;
+      }
+      .btn-primary {
+        background: var(--ink);
+        color: white;
+        padding: 14px 28px;
+        border-radius: 6px;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-decoration: none;
+        letter-spacing: -0.01em;
+        transition: all 0.2s;
+        border: 1.5px solid var(--ink);
+      }
+      .btn-primary:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--ink);
+        padding: 14px 28px;
+        border-radius: 6px;
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        border: 1.5px solid var(--border);
+        transition: all 0.2s;
+      }
+      .btn-ghost:hover {
+        border-color: var(--ink);
+      }
+
+      .hero-badges {
+        display: flex;
+        gap: 24px;
+        margin-top: 3rem;
+        flex-wrap: wrap;
+        animation: fadeUp 0.7s 0.4s ease both;
+      }
+      .badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+      .badge b {
+        color: var(--ink);
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ─── SECTION ─── */
+      .section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 6rem 2rem;
+      }
+      .section-label {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--accent);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+      }
+      h2 {
+        font-family: var(--display);
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        margin-bottom: 1rem;
+      }
+      .section-desc {
+        color: var(--muted);
+        max-width: 560px;
+        font-weight: 300;
+        margin-bottom: 3rem;
+      }
+
+      /* ─── ABOUT / PROBLEM-SOLUTION ─── */
+      .about-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4rem;
+        align-items: start;
+      }
+      .callout {
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+      }
+      .callout.problem {
+        background: #fff3ef;
+        border-left: 3px solid var(--warn);
+      }
+      .callout.solution {
+        background: #edfbf7;
+        border-left: 3px solid var(--accent2);
+      }
+      .callout strong {
+        display: block;
+        margin-bottom: 0.25rem;
+        font-family: var(--display);
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .highlights-box {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+      }
+      .highlights-box h4 {
+        font-family: var(--display);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 1rem;
+      }
+      .hl-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .hl-item:last-child {
+        border: none;
+        padding-bottom: 0;
+      }
+      .hl-num {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: var(--accent);
+        min-width: 20px;
+        margin-top: 3px;
+      }
+      .hl-item p {
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+      .hl-item strong {
+        color: var(--ink);
+      }
+
+      .how-it-works {
+      }
+      .how-it-works h3 {
+        font-family: var(--display);
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 1.5rem;
+      }
+      .step-flow {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .flow-item {
+        display: flex;
+        gap: 1.25rem;
+        align-items: flex-start;
+        padding: 1rem 0;
+        position: relative;
+      }
+      .flow-item::before {
+        content: "";
+        position: absolute;
+        left: 19px;
+        top: 44px;
+        width: 2px;
+        height: calc(100% - 12px);
+        background: var(--border);
+      }
+      .flow-item:last-child::before {
+        display: none;
+      }
+      .flow-num {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--ink);
+        color: white;
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+      }
+      .flow-text strong {
+        font-family: var(--display);
+        font-size: 0.9rem;
+        display: block;
+      }
+      .flow-text span {
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+
+      .sse-note {
+        background: #f8f8fc;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-top: 1.5rem;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.82em;
+        background: rgba(26, 86, 255, 0.08);
+        color: var(--accent);
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      /* ─── FEATURES ─── */
+      .features-bg {
+        background: var(--ink);
+      }
+      .features-section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 6rem 2rem;
+      }
+      .features-section .section-label {
+        color: var(--accent2);
+      }
+      .features-section h2 {
+        color: white;
+      }
+      .features-section .section-desc {
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .feat-card {
+        background: var(--ink);
+        padding: 2rem 1.75rem;
+        transition: background 0.2s;
+      }
+      .feat-card:hover {
+        background: #111118;
+      }
+      .feat-icon {
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
+        width: 48px;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .feat-card h3 {
+        font-family: var(--display);
+        font-size: 1rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+      }
+      .feat-card p {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.45);
+        line-height: 1.55;
+      }
+
+      /* ─── APIs COMPARISON ─── */
+      .apis-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .api-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .api-card-head {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .api-card-head h3 {
+        font-family: var(--display);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .api-badge {
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        font-weight: 500;
+        padding: 3px 8px;
+        border-radius: 100px;
+        margin-left: auto;
+      }
+      .api-badge.warn {
+        background: #fff3ef;
+        color: var(--warn);
+      }
+      .api-badge.ok {
+        background: #edfbf7;
+        color: #00a382;
+      }
+      .api-card-body {
+        padding: 1.25rem 1.5rem;
+      }
+
+      .code-block {
+        background: #0f1117;
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1rem;
+        overflow-x: auto;
+      }
+      .code-block pre {
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        color: #a0aec0;
+        line-height: 1.7;
+        margin: 0;
+      }
+      .code-block pre .hl {
+        color: var(--accent2);
+      }
+
+      .api-note {
+        font-size: 0.8rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+      }
+      .api-note.warn {
+        background: #fff8f5;
+        color: #a05020;
+      }
+      .api-note.ok {
+        background: #f0fdf9;
+        color: #166a57;
+      }
+
+      .multi-config {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .multi-config-head {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .multi-config-head h4 {
+        font-family: var(--display);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .tip-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+
+      /* ─── INSTALLATION ─── */
+      .install-bg {
+        background: var(--paper);
+      }
+      .tabs-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 1.5rem;
+      }
+      .tab-btn {
+        font-family: var(--display);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 8px 18px;
+        border-radius: 6px;
+        border: 1.5px solid var(--border);
+        background: white;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .tab-btn.active {
+        background: var(--ink);
+        color: white;
+        border-color: var(--ink);
+      }
+      .tab-pane {
+        display: none;
+      }
+      .tab-pane.active {
+        display: block;
+      }
+
+      /* ─── QUICK START ─── */
+      .steps-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .qs-step {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .qs-step-head {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+      .qs-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--ink);
+        color: white;
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .qs-step-head h3 {
+        font-family: var(--display);
+        font-size: 0.95rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .qs-step-body {
+        padding: 1.25rem 1.5rem;
+      }
+      .qs-step-body p {
+        font-size: 0.875rem;
+        color: var(--muted);
+      }
+
+      /* ─── CONFIG ─── */
+      .config-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+      .config-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .config-card-head {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .config-card-head h3 {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .config-card-body {
+        padding: 0;
+      }
+
+      /* ─── FOOTER ─── */
+      footer {
+        background: var(--ink);
+        color: white;
+        padding: 4rem 2rem 3rem;
+      }
+      .footer-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        text-align: center;
+      }
+      .footer-logo {
+        font-family: var(--display);
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+      .footer-links {
+        display: flex;
+        gap: 2rem;
+        list-style: none;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .footer-links a {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.4);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .footer-links a:hover {
+        color: white;
+      }
+      .footer-copy {
+        font-size: 0.78rem;
+        color: rgba(255, 255, 255, 0.25);
+        font-family: var(--mono);
+      }
+
+      /* ─── DIVIDER ─── */
+      .divider {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 0;
+      }
+
+      @media (max-width: 768px) {
+        .about-layout,
+        .apis-grid,
+        .config-grid,
+        .features-grid {
+          grid-template-columns: 1fr;
+        }
+        .features-grid {
+          gap: 1px;
+        }
+        .nav-links {
+          display: none;
+        }
+        h1 {
+          font-size: 2.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- NAV -->
+    <nav>
+      <div class="nav-inner">
+        <div class="logo"><span class="logo-dot"></span>rest2mcp</div>
+        <ul class="nav-links">
+          <li><a href="#about">Sobre</a></li>
+          <li><a href="#features">Recursos</a></li>
+          <li><a href="#examples">Exemplos</a></li>
+          <li><a href="#installation">Instalação</a></li>
+          <li><a href="#quickstart">Quick Start</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-grid"></div>
+      <div class="hero-inner">
+        <div class="hero-tag"><span></span>v1.0.0 · Matias Fernando</div>
+        <h1>Converte <em>qualquer</em><br />API em MCP</h1>
+        <p class="hero-sub">
+          Sem escrever código. Apenas configure a URL da spec OpenAPI/Swagger e
+          a tua API fica disponível como ferramentas MCP para LLMs em segundos.
+        </p>
+        <div class="hero-ctas">
+          <a href="#installation" class="btn-primary">Começar agora →</a>
+          <a href="#about" class="btn-ghost">Como funciona</a>
+        </div>
+        <div class="hero-badges">
+          <div class="badge">
+            <span>⚡</span> <b>Segundos</b> de configuração
+          </div>
+          <div class="badge"><span>✦</span> <b>Zero</b> código necessário</div>
+          <div class="badge">
+            <span>⟳</span> <b>Swagger 2.0</b> → OpenAPI 3.0
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section" id="about">
+      <div class="section-label">// 01 — Sobre o projeto</div>
+      <h2>Por que este<br />projecto existe?</h2>
+      <div class="about-layout">
+        <div>
+          <p style="color: var(--muted); margin-bottom: 1rem; font-weight: 300">
+            LLMs modernos têm capacidades incríveis, mas não conseguem interagir
+            diretamente com APIs REST existentes. O Protocolo MCP resolve isso,
+            mas exige que cada API tenha um servidor dedicado.
+          </p>
+          <p
+            style="color: var(--muted); margin-bottom: 1.5rem; font-weight: 300"
+          >
+            O
+            <strong style="color: var(--ink)">rest2mcp</strong>
+            elimina essa barreira: forneces a URL da spec OpenAPI/Swagger, e o
+            servidor gera automaticamente as ferramentas MCP correspondentes.
+          </p>
+
+          <div class="callout problem">
+            <strong>❌ Problema</strong>
+            LLMs não conseguem chamar endpoints REST diretamente, e cada API
+            precisaria de um servidor MCP dedicado.
+          </div>
+          <div class="callout solution">
+            <strong>✅ Solução</strong>
+            Conversão automática de specs OpenAPI/Swagger para ferramentas MCP —
+            sem código adicional.
+          </div>
+
+          <div class="highlights-box">
+            <h4>✨ Destaques fundamentais</h4>
+            <div class="hl-item">
+              <span class="hl-num">01</span>
+              <p>
+                <strong>Zero código</strong> — Apenas configure a URL da spec no
+                cliente MCP.
+              </p>
+            </div>
+            <div class="hl-item">
+              <span class="hl-num">02</span>
+              <p>
+                <strong>Múltiplas APIs</strong> — Configure várias APIs no mesmo
+                cliente simultaneamente.
+              </p>
+            </div>
+            <div class="hl-item">
+              <span class="hl-num">03</span>
+              <p>
+                <strong>Conversão automática</strong> — Swagger 2.0 é convertido
+                para OpenAPI 3.0 automaticamente.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-it-works">
+          <h3>Como funciona?</h3>
+          <p
+            style="
+              color: var(--muted);
+              font-size: 0.88rem;
+              margin-bottom: 1.5rem;
+            "
+          >
+            No transporte <strong>stdio</strong> (padrão):
+          </p>
+          <div class="step-flow">
+            <div class="flow-item">
+              <div class="flow-num">01</div>
+              <div class="flow-text">
+                <strong>Configurar <code>MCP_SPEC_URL</code></strong>
+                <span>Define a variável no teu cliente MCP favorito.</span>
+              </div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-num">02</div>
+              <div class="flow-text">
+                <strong>Download e conversão</strong>
+                <span>O servidor baixa e converte a especificação da API.</span>
+              </div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-num">03</div>
+              <div class="flow-text">
+                <strong>Geração das ferramentas</strong>
+                <span
+                  >Ferramentas MCP criadas automaticamente a partir dos
+                  endpoints.</span
+                >
+              </div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-num">04</div>
+              <div class="flow-text">
+                <strong>LLM usa as ferramentas</strong>
+                <span
+                  >O modelo chama a API como se fossem funções nativas.</span
+                >
+              </div>
+            </div>
+            <div class="flow-item">
+              <div class="flow-num">05</div>
+              <div class="flow-text">
+                <strong>Ciclo encerrado</strong>
+                <span>O servidor termina quando o cliente desconecta.</span>
+              </div>
+            </div>
+          </div>
+          <div class="sse-note">
+            <strong>Nota SSE/HTTP:</strong> Para transporte SSE, o servidor pode
+            correr de forma independente num host remoto, sem depender do ciclo
+            de vida do cliente.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRANSPORT CHANNELS -->
+    <section class="section" id="transports">
+      <div class="section-label">// 02 — Canais de transporte</div>
+      <h2>STDIO, HTTP e SSE<br />três modos de uso</h2>
+      <p class="section-desc">
+        O rest2mcp suporta três canais de transporte, cada um ideal para
+        diferentes cenários de integração.
+      </p>
+
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.5rem;
+          margin-top: 2rem;
+        "
+      >
+        <!-- STDIO -->
+        <div
+          style="
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s;
+          "
+        >
+          <div
+            style="
+              font-family: var(--mono);
+              font-size: 0.7rem;
+              color: var(--accent);
+              letter-spacing: 0.12em;
+              text-transform: uppercase;
+              margin-bottom: 1rem;
+            "
+          >
+            Transporte STDIO
+          </div>
+          <h3
+            style="
+              font-family: var(--display);
+              font-size: 1.3rem;
+              font-weight: 700;
+              letter-spacing: -0.02em;
+              margin-bottom: 0.75rem;
+            "
+          >
+            Padrão — Cliente spawna
+          </h3>
+          <p
+            style="
+              font-size: 0.88rem;
+              color: var(--muted);
+              margin-bottom: 1.25rem;
+              line-height: 1.6;
+            "
+          >
+            Ideal para integração direta com clientes MCP locais (VS Code,
+            Claude Desktop, Cursor).
+          </p>
+          <div
+            style="
+              background: var(--paper);
+              border-radius: 8px;
+              padding: 1rem;
+              margin-bottom: 1rem;
+            "
+          >
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--muted);
+                margin-bottom: 0.5rem;
+              "
+            >
+              CICLO DE VIDA
+            </div>
+            <div style="font-size: 0.88rem; font-weight: 500">
+              Cliente spawna/killa processo
+            </div>
+          </div>
+          <div
+            style="background: var(--paper); border-radius: 8px; padding: 1rem"
+          >
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--muted);
+                margin-bottom: 0.5rem;
+              "
+            >
+              INSPECTOR (--inspect)
+            </div>
+            <div style="font-size: 0.88rem; font-weight: 500">
+              Inspector spawna processo diretamente
+            </div>
+          </div>
+          <div
+            style="
+              margin-top: 1.25rem;
+              font-family: var(--mono);
+              font-size: 0.78rem;
+              color: var(--muted);
+            "
+          >
+            python main.py --transport stdio
+          </div>
+        </div>
+
+        <!-- HTTP -->
+        <div
+          style="
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s;
+          "
+        >
+          <div
+            style="
+              font-family: var(--mono);
+              font-size: 0.7rem;
+              color: var(--accent2);
+              letter-spacing: 0.12em;
+              text-transform: uppercase;
+              margin-bottom: 1rem;
+            "
+          >
+            Transporte HTTP
+          </div>
+          <h3
+            style="
+              font-family: var(--display);
+              font-size: 1.3rem;
+              font-weight: 700;
+              letter-spacing: -0.02em;
+              margin-bottom: 0.75rem;
+            "
+          >
+            Servidor independente
+          </h3>
+          <p
+            style="
+              font-size: 0.88rem;
+              color: var(--muted);
+              margin-bottom: 1.25rem;
+              line-height: 1.6;
+            "
+          >
+            Ideal quando o servidor precisa rodar de forma contínua em host
+            remoto ou local.
+          </p>
+          <div
+            style="
+              background: var(--paper);
+              border-radius: 8px;
+              padding: 1rem;
+              margin-bottom: 1rem;
+            "
+          >
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--muted);
+                margin-bottom: 0.5rem;
+              "
+            >
+              CICLO DE VIDA
+            </div>
+            <div style="font-size: 0.88rem; font-weight: 500">
+              Contínuo (até parar manualmente)
+            </div>
+          </div>
+          <div
+            style="background: var(--paper); border-radius: 8px; padding: 1rem"
+          >
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--muted);
+                margin-bottom: 0.5rem;
+              "
+            >
+              INSPECTOR (--inspect)
+            </div>
+            <div style="font-size: 0.88rem; font-weight: 500">
+              Servidor HTTP + Inspector no browser
+            </div>
+          </div>
+          <div
+            style="
+              margin-top: 1.25rem;
+              font-family: var(--mono);
+              font-size: 0.78rem;
+              color: var(--muted);
+            "
+          >
+            python main.py --transport http --port 8081
+          </div>
+        </div>
+
+        <!-- SSE -->
+        <div
+          style="
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s;
+          "
+        >
+          <div
+            style="
+              font-family: var(--mono);
+              font-size: 0.7rem;
+              color: var(--warn);
+              letter-spacing: 0.12em;
+              text-transform: uppercase;
+              margin-bottom: 1rem;
+            "
+          >
+            Transporte SSE
+          </div>
+          <h3
+            style="
+              font-family: var(--display);
+              font-size: 1.3rem;
+              font-weight: 700;
+              letter-spacing: -0.02em;
+              margin-bottom: 0.75rem;
+            "
+          >
+            Server-Sent Events
+          </h3>
+          <p
+            style="
+              font-size: 0.88rem;
+              color: var(--muted);
+              margin-bottom: 1.25rem;
+              line-height: 1.6;
+            "
+          >
+            Ideal para comunicação em tempo real via Server-Sent Events com
+            suporte nativo.
+          </p>
+          <div
+            style="
+              background: var(--paper);
+              border-radius: 8px;
+              padding: 1rem;
+              margin-bottom: 1rem;
+            "
+          >
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--muted);
+                margin-bottom: 0.5rem;
+              "
+            >
+              CICLO DE VIDA
+            </div>
+            <div style="font-size: 0.88rem; font-weight: 500">
+              Contínuo (até parar manualmente)
+            </div>
+          </div>
+          <div
+            style="background: var(--paper); border-radius: 8px; padding: 1rem"
+          >
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: var(--muted);
+                margin-bottom: 0.5rem;
+              "
+            >
+              INSPECTOR (--inspect)
+            </div>
+            <div style="font-size: 0.88rem; font-weight: 500">
+              Servidor SSE + Inspector no browser
+            </div>
+          </div>
+          <div
+            style="
+              margin-top: 1.25rem;
+              font-family: var(--mono);
+              font-size: 0.78rem;
+              color: var(--muted);
+            "
+          >
+            python main.py --transport sse --port 8081
+          </div>
+        </div>
+      </div>
+
+      <!-- Usage Examples -->
+      <div
+        style="
+          margin-top: 3rem;
+          background: var(--ink);
+          border-radius: 12px;
+          padding: 2.5rem;
+          color: white;
+        "
+      >
+        <div
+          style="
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--accent2);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+          "
+        >
+          Exemplos de uso com --inspect
+        </div>
+        <h3
+          style="
+            font-family: var(--display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+          "
+        >
+          Como usar com e sem --inspect
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem">
+          <!-- Com --inspect -->
+          <div>
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: rgba(255, 255, 255, 0.5);
+                margin-bottom: 0.75rem;
+              "
+            >
+              ✨ COM INSPECTOR
+            </div>
+            <div
+              style="
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding: 1.25rem;
+                font-family: var(--mono);
+                font-size: 0.82rem;
+                line-height: 1.8;
+              "
+            >
+              <div style="color: var(--accent2); margin-bottom: 0.5rem">
+                # STDIO — Inspector spawna diretamente
+              </div>
+              <div style="color: rgba(255, 255, 255, 0.7)">
+                python main.py --inspect --transport stdio
+              </div>
+              <div style="color: var(--accent2); margin: 1rem 0 0.5rem">
+                # HTTP — Servidor + Inspector
+              </div>
+              <div style="color: rgba(255, 255, 255, 0.7)">
+                python main.py --inspect --transport http --port 8081
+              </div>
+              <div style="color: var(--accent2); margin: 1rem 0 0.5rem">
+                # SSE — Servidor + Inspector
+              </div>
+              <div style="color: rgba(255, 255, 255, 0.7)">
+                python main.py --inspect --transport sse --port 8081
+              </div>
+            </div>
+          </div>
+
+          <!-- Sem --inspect -->
+          <div>
+            <div
+              style="
+                font-family: var(--mono);
+                font-size: 0.72rem;
+                color: rgba(255, 255, 255, 0.5);
+                margin-bottom: 0.75rem;
+              "
+            >
+              🚀 PRODUÇÃO (SEM INSPECT)
+            </div>
+            <div
+              style="
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding: 1.25rem;
+                font-family: var(--mono);
+                font-size: 0.82rem;
+                line-height: 1.8;
+              "
+            >
+              <div style="color: var(--accent2); margin-bottom: 0.5rem">
+                # STDIO — Cliente spawna (padrão)
+              </div>
+              <div style="color: rgba(255, 255, 255, 0.7)">
+                python main.py --transport stdio
+              </div>
+              <div style="color: var(--accent2); margin: 1rem 0 0.5rem">
+                # HTTP — Servidor independente
+              </div>
+              <div style="color: rgba(255, 255, 255, 0.7)">
+                python main.py --transport http --port 8081
+              </div>
+              <div style="color: var(--accent2); margin: 1rem 0 0.5rem">
+                # SSE — Servidor independente
+              </div>
+              <div style="color: rgba(255, 255, 255, 0.7)">
+                python main.py --transport sse --port 8081
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- FEATURES -->
+    <div class="features-bg">
+      <div class="features-section" id="features">
+        <div class="section-label">// 03 — Recursos</div>
+        <h2 style="color: white">Tudo o que precisas,<br />pronto a usar.</h2>
+        <p class="section-desc">
+          Seis recursos que tornam o rest2mcp a escolha mais rápida para
+          conectar LLMs às tuas APIs.
+        </p>
+
+        <div class="features-grid">
+          <div class="feat-card">
+            <div class="feat-icon">🌐</div>
+            <h3>Qualquer API, Zero Código</h3>
+            <p>
+              Apenas configura a URL da spec. Sem desenvolver servidores MCP
+              individuais para cada API.
+            </p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🔄</div>
+            <h3>Múltiplas APIs Simultâneas</h3>
+            <p>
+              Configura várias APIs no mesmo cliente MCP, cada uma com o seu
+              próprio servidor.
+            </p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🖥️</div>
+            <h3>Conversão Automática</h3>
+            <p>
+              Swagger 2.0 desatualizado? Convertido automaticamente para OpenAPI
+              3.0 via swagger2openapi.
+            </p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🔍</div>
+            <h3>Modo Inspector</h3>
+            <p>
+              Testa e depura as ferramentas geradas com o MCP Inspector
+              integrado no próprio servidor.
+            </p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🎨</div>
+            <h3>Logging Colorido</h3>
+            <p>
+              Logs informativos com cores para depuração rápida e eficaz no
+              terminal.
+            </p>
+          </div>
+          <div class="feat-card">
+            <div class="feat-icon">🧪</div>
+            <h3>API de Teste Incluída</h3>
+            <p>
+              Inclui
+              <code
+                style="
+                  color: var(--accent2);
+                  background: rgba(0, 212, 170, 0.1);
+                "
+                >loja_api.py</code
+              >
+              — uma API FastAPI de demonstração para testes locais imediatos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXAMPLES -->
+    <section class="section" id="examples">
+      <div class="section-label">// 04 — Exemplo prático</div>
+      <h2>Duas APIs,<br />um servidor.</h2>
+      <p class="section-desc">
+        Configura múltiplas APIs no mesmo cliente MCP. Veja a diferença entre
+        uma API externa (Swagger 2.0) e uma API local (OpenAPI 3.0).
+      </p>
+
+      <div class="apis-grid">
+        <div class="api-card">
+          <div class="api-card-head">
+            <span>🌐</span>
+            <h3>PetStore API (Externa)</h3>
+            <span class="api-badge warn">Swagger 2.0</span>
+          </div>
+          <div class="api-card-body">
+            <div class="code-block">
+              <pre><span class="hl">MCP_SPEC_URL</span>=https://petstore.swagger.io/v2/swagger.json
+<span class="hl">MCP_SERVER_NAME</span>=PetStore API</pre>
+            </div>
+            <div class="api-note warn">
+              ⚠️ <strong>Swagger 2.0 desatualizado</strong> — O servidor
+              converte automaticamente para OpenAPI 3.0 usando swagger2openapi.
+            </div>
+          </div>
+        </div>
+
+        <div class="api-card">
+          <div class="api-card-head">
+            <span>🏠</span>
+            <h3>Loja API (Local)</h3>
+            <span class="api-badge ok">OpenAPI 3.0</span>
+          </div>
+          <div class="api-card-body">
+            <div class="code-block">
+              <pre><span class="hl">MCP_SPEC_URL</span>=http://localhost:8000/openapi.json
+<span class="hl">MCP_SERVER_NAME</span>=Loja API</pre>
+            </div>
+            <div class="api-note ok">
+              ✅ <strong>OpenAPI 3.0 nativo</strong> — Usado directamente sem
+              conversão, mais rápido e confiável.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="multi-config">
+        <div class="multi-config-head">
+          <span class="tip-dot"></span>
+          <h4>Configuração no VS Code — Múltiplas APIs</h4>
+        </div>
+        <div class="code-block" style="border-radius: 0; margin: 0">
+          <pre>{
+  <span class="hl">"mcp.servers"</span>: {
+    "petstore": {
+      "command": ".../venv/Scripts/python.exe",
+      "args": ["main.py"],
+      "env": {
+        "MCP_SPEC_URL": "https://petstore.swagger.io/v2/swagger.json",
+        "MCP_SERVER_NAME": "PetStore API"
+      }
+    },
+    "loja-local": {
+      "command": ".../venv/Scripts/python.exe",
+      "args": ["main.py"],
+      "env": {
+        "MCP_SPEC_URL": "http://localhost:8000/openapi.json",
+        "MCP_SERVER_NAME": "Loja API"
+      }
+    }
+  }
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- INSTALLATION -->
+    <section class="section" id="installation">
+      <div class="section-label">// 05 — Instalação</div>
+      <h2>Instala em<br />segundos.</h2>
+      <p class="section-desc">
+        Escolhe o método adequado para o teu sistema operativo.
+      </p>
+
+      <div class="tabs-row">
+        <button class="tab-btn active" onclick="switchTab('makefile', this)">
+          Makefile
+        </button>
+        <button class="tab-btn" onclick="switchTab('linux', this)">
+          Linux / macOS
+        </button>
+        <button class="tab-btn" onclick="switchTab('windows', this)">
+          Windows
+        </button>
+      </div>
+
+      <div id="makefile" class="tab-pane active">
+        <div class="code-block">
+          <pre><span class="hl"># Instalação completa (Python + Node.js)</span>
+make install
+
+<span class="hl"># Apenas Python</span>
+make install-python
+
+<span class="hl"># Apenas Node.js</span>
+make install-node
+
+<span class="hl"># Limpar ficheiros temporários</span>
+make clean
+
+<span class="hl"># Iniciar Inspector (requer MCP_SPEC_URL)</span>
+make inspect</pre>
+        </div>
+      </div>
+      <div id="linux" class="tab-pane">
+        <div class="code-block">
+          <pre><span class="hl"># Dar permissões de execução</span>
+chmod +x setup.sh
+
+<span class="hl"># Executar script de instalação</span>
+./setup.sh</pre>
+        </div>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-top: 1rem">
+          O script cria o venv, instala dependências Python e Node.js
+          globalmente.
+        </p>
+      </div>
+      <div id="windows" class="tab-pane">
+        <div class="code-block">
+          <pre><span class="hl"># Executar no PowerShell</span>
+.\setup.ps1</pre>
+        </div>
+        <p style="color: var(--muted); font-size: 0.85rem; margin-top: 1rem">
+          O script cria o venv, instala dependências Python e Node.js
+          globalmente.
+        </p>
+      </div>
+
+      <div style="margin-top: 2rem">
+        <div class="qs-step">
+          <div class="qs-step-head">
+            <div class="qs-num">01</div>
+            <h3>Clonar o Repositório</h3>
+          </div>
+          <div class="qs-step-body">
+            <div class="code-block">
+              <pre>
+git clone https://github.com/mvninull/open-mcp.git
+cd open-mcp</pre
+              >
+            </div>
+          </div>
+        </div>
+        <div style="height: 1rem"></div>
+        <div class="qs-step">
+          <div class="qs-step-head">
+            <div class="qs-num">02</div>
+            <h3>Configurar o Servidor MCP no Cliente</h3>
+          </div>
+          <div class="qs-step-body">
+            <p style="margin-bottom: 1rem">
+              Após clonar, configura no ficheiro JSON do teu cliente MCP (VS
+              Code, Claude, etc.):
+            </p>
+            <div class="code-block">
+              <pre>{
+  <span class="hl">"mcp.servers"</span>: {
+    "minha-api": {
+      "command": "${workspaceFolder}/venv/Scripts/python.exe",
+      "args": ["${workspaceFolder}/main.py"],
+      "env": {
+        "MCP_SPEC_URL": "https://petstore.swagger.io/v2/swagger.json",
+        "MCP_SERVER_NAME": "PetStore API"
+      }
+    }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+        <div style="height: 1rem"></div>
+        <div class="qs-step">
+          <div class="qs-step-head">
+            <div class="qs-num">03</div>
+            <h3>Pronto! Verificar Instalação</h3>
+          </div>
+          <div class="qs-step-body">
+            <p>
+              O script instala automaticamente: Python venv com
+              <code>fastmcp</code>, <code>httpx</code> e <code>pydantic</code>,
+              além de Node.js <code>swagger2openapi</code> globalmente.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- QUICK START -->
+    <section class="section" id="quickstart">
+      <div class="section-label">// 06 — Quick Start</div>
+      <h2>Em produção<br />em minutos.</h2>
+      <p class="section-desc">
+        Usa a API de teste incluída (<code>loja_api.py</code>) para experimentar
+        o servidor MCP localmente.
+      </p>
+
+      <div class="steps-list">
+        <div class="qs-step">
+          <div class="qs-step-head">
+            <div class="qs-num">1</div>
+            <h3>Iniciar API de Teste</h3>
+          </div>
+          <div class="qs-step-body">
+            <div class="code-block">
+              <pre><span class="hl"># Terminal 1: Iniciar loja_api.py</span>
+./venv/Scripts/python loja_api.py
+
+<span class="hl"># API disponível em:</span>
+# Swagger UI  → http://localhost:8000/docs
+# OpenAPI JSON → http://localhost:8000/openapi.json</pre>
+            </div>
+          </div>
+        </div>
+        <div class="qs-step">
+          <div class="qs-step-head">
+            <div class="qs-num">2</div>
+            <h3>Configurar Variáveis de Ambiente</h3>
+          </div>
+          <div class="qs-step-body">
+            <div class="code-block">
+              <pre><span class="hl"># Terminal 2 (PowerShell)</span>
+$env:MCP_SPEC_URL = "http://localhost:8000/openapi.json"
+$env:MCP_SERVER_NAME = "Loja API"</pre>
+            </div>
+          </div>
+        </div>
+        <div class="qs-step">
+          <div class="qs-step-head">
+            <div class="qs-num">3</div>
+            <h3>Iniciar MCP Inspector</h3>
+          </div>
+          <div class="qs-step-body">
+            <div class="code-block">
+              <pre><span class="hl"># Terminal 2</span>
+./venv/Scripts/python main.py --inspect
+
+<span class="hl"># Inspector abre em → http://localhost:6274</span></pre>
+            </div>
+          </div>
+        </div>
+        <div class="qs-step">
+          <div class="qs-step-head">
+            <div class="qs-num">4</div>
+            <h3>Testar as Ferramentas</h3>
+          </div>
+          <div class="qs-step-body">
+            <p>
+              No Inspector, clica em <strong>"List Tools"</strong> para ver as
+              ferramentas geradas automaticamente a partir da Loja API — listar
+              produtos, criar, actualizar e eliminar.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" />
+
+    <!-- CONFIG -->
+    <section class="section" id="config">
+      <div class="section-label">// 07 — Configuração</div>
+      <h2>Clientes MCP<br />suportados.</h2>
+      <p class="section-desc">
+        Exemplos de configuração para os principais clientes MCP.
+      </p>
+
+      <div class="config-grid">
+        <div class="config-card">
+          <div class="config-card-head">
+            <span>⚡</span>
+            <h3>VS Code / OpenCode</h3>
+          </div>
+          <div class="config-card-body">
+            <div class="code-block" style="border-radius: 0; margin: 0">
+              <pre>{
+  <span class="hl">"mcp.servers"</span>: {
+    "loja-api": {
+      "command": "${workspaceFolder}/venv/Scripts/python.exe",
+      "args": ["${workspaceFolder}/main.py"],
+      "env": {
+        "MCP_SPEC_URL": "http://localhost:8000/openapi.json",
+        "MCP_SERVER_NAME": "Loja API"
+      }
+    }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="config-card">
+          <div class="config-card-head">
+            <span>🤖</span>
+            <h3>Claude Desktop</h3>
+          </div>
+          <div class="config-card-body">
+            <div class="code-block" style="border-radius: 0; margin: 0">
+              <pre>{
+  <span class="hl">"mcpServers"</span>: {
+    "loja-api": {
+      "command": "/caminho/venv/Scripts/python.exe",
+      "args": ["/caminho/main.py"],
+      "env": {
+        "MCP_SPEC_URL": "http://localhost:8000/openapi.json",
+        "MCP_SERVER_NAME": "Loja API"
+      }
+    }
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div class="footer-inner">
+        <div class="footer-logo">rest2mcp</div>
+        <p style="color: rgba(255, 255, 255, 0.35); font-size: 0.85rem">
+          Versão 1.0.0 · Autor: Matias Fernando
+        </p>
+        <ul class="footer-links">
+          <li>
+            <a href="https://gofastmcp.com" target="_blank">FastMCP Docs</a>
+          </li>
+          <li>
+            <a href="https://modelcontextprotocol.io" target="_blank"
+              >MCP Protocol</a
+            >
+          </li>
+          <li>
+            <a href="https://swagger.io/specification/" target="_blank"
+              >OpenAPI Spec</a
+            >
+          </li>
+          <li><a href="#">Documentação</a></li>
+        </ul>
+        <p class="footer-copy">
+          © 2026 rest2mcp. Todos os direitos reservados.
+        </p>
+      </div>
+    </footer>
+
+    <script>
+      function switchTab(id, btn) {
+        document
+          .querySelectorAll(".tab-pane")
+          .forEach((p) => p.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+        btn.classList.add("active");
+      }
+    </script>
+  </body>
+</html>
