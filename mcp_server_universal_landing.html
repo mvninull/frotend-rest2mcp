@@ -433,9 +433,91 @@ footer {
   </div>
 </section>
 
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="section-label">// 01 — Sobre o projeto</div>
+  <h2>Por que este<br>projecto existe?</h2>
+  <div class="about-layout">
+    <div>
+      <p style="color:var(--muted);margin-bottom:1rem;font-weight:300;">LLMs modernos têm capacidades incríveis, mas não conseguem interagir diretamente com APIs REST existentes. O Protocolo MCP resolve isso, mas exige que cada API tenha um servidor dedicado.</p>
+      <p style="color:var(--muted);margin-bottom:1.5rem;font-weight:300;">O <strong style="color:var(--ink)">MCP Server Universal</strong> elimina essa barreira: forneces a URL da spec OpenAPI/Swagger, e o servidor gera automaticamente as ferramentas MCP correspondentes.</p>
+
+      <div class="callout problem">
+        <strong>❌ Problema</strong>
+        LLMs não conseguem chamar endpoints REST diretamente, e cada API precisaria de um servidor MCP dedicado.
+      </div>
+      <div class="callout solution">
+        <strong>✅ Solução</strong>
+        Conversão automática de specs OpenAPI/Swagger para ferramentas MCP — sem código adicional.
+      </div>
+
+      <div class="highlights-box">
+        <h4>✨ Destaques fundamentais</h4>
+        <div class="hl-item">
+          <span class="hl-num">01</span>
+          <p><strong>Zero código</strong> — Apenas configure a URL da spec no cliente MCP.</p>
+        </div>
+        <div class="hl-item">
+          <span class="hl-num">02</span>
+          <p><strong>Múltiplas APIs</strong> — Configure várias APIs no mesmo cliente simultaneamente.</p>
+        </div>
+        <div class="hl-item">
+          <span class="hl-num">03</span>
+          <p><strong>Conversão automática</strong> — Swagger 2.0 é convertido para OpenAPI 3.0 automaticamente.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="how-it-works">
+      <h3>Como funciona?</h3>
+      <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;">No transporte <strong>stdio</strong> (padrão):</p>
+      <div class="step-flow">
+        <div class="flow-item">
+          <div class="flow-num">01</div>
+          <div class="flow-text">
+            <strong>Configurar <code>MCP_SPEC_URL</code></strong>
+            <span>Define a variável no teu cliente MCP favorito.</span>
+          </div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-num">02</div>
+          <div class="flow-text">
+            <strong>Download e conversão</strong>
+            <span>O servidor baixa e converte a especificação da API.</span>
+          </div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-num">03</div>
+          <div class="flow-text">
+            <strong>Geração das ferramentas</strong>
+            <span>Ferramentas MCP criadas automaticamente a partir dos endpoints.</span>
+          </div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-num">04</div>
+          <div class="flow-text">
+            <strong>LLM usa as ferramentas</strong>
+            <span>O modelo chama a API como se fossem funções nativas.</span>
+          </div>
+        </div>
+        <div class="flow-item">
+          <div class="flow-num">05</div>
+          <div class="flow-text">
+            <strong>Ciclo encerrado</strong>
+            <span>O servidor termina quando o cliente desconecta.</span>
+          </div>
+        </div>
+      </div>
+      <div class="sse-note">
+        <strong>Nota SSE/HTTP:</strong> Para transporte SSE, o servidor pode correr de forma independente num host remoto, sem depender do ciclo de vida do cliente.
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- TRANSPORT CHANNELS -->
 <section class="section" id="transports">
-  <div class="section-label">// 01 — Canais de transporte</div>
+  <div class="section-label">// 02 — Canais de transporte</div>
   <h2>STDIO, HTTP e SSE<br>três modos de uso</h2>
   <p class="section-desc">O MCP Server Universal suporta três canais de transporte, cada um ideal para diferentes cenários de integração.</p>
 
@@ -519,88 +601,6 @@ footer {
           <div style="color:var(--accent2);margin:1rem 0 0.5rem;"># SSE — Servidor independente</div>
           <div style="color:rgba(255,255,255,0.7);">python main.py --transport sse --port 8081</div>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ABOUT -->
-<section class="section" id="about">
-  <div class="section-label">// 02 — Sobre o projecto</div>
-  <h2>Por que este<br>projecto existe?</h2>
-  <div class="about-layout">
-    <div>
-      <p style="color:var(--muted);margin-bottom:1rem;font-weight:300;">LLMs modernos têm capacidades incríveis, mas não conseguem interagir diretamente com APIs REST existentes. O Protocolo MCP resolve isso, mas exige que cada API tenha um servidor dedicado.</p>
-      <p style="color:var(--muted);margin-bottom:1.5rem;font-weight:300;">O <strong style="color:var(--ink)">MCP Server Universal</strong> elimina essa barreira: forneces a URL da spec OpenAPI/Swagger, e o servidor gera automaticamente as ferramentas MCP correspondentes.</p>
-
-      <div class="callout problem">
-        <strong>❌ Problema</strong>
-        LLMs não conseguem chamar endpoints REST diretamente, e cada API precisaria de um servidor MCP dedicado.
-      </div>
-      <div class="callout solution">
-        <strong>✅ Solução</strong>
-        Conversão automática de specs OpenAPI/Swagger para ferramentas MCP — sem código adicional.
-      </div>
-
-      <div class="highlights-box">
-        <h4>✨ Destaques fundamentais</h4>
-        <div class="hl-item">
-          <span class="hl-num">01</span>
-          <p><strong>Zero código</strong> — Apenas configure a URL da spec no cliente MCP.</p>
-        </div>
-        <div class="hl-item">
-          <span class="hl-num">02</span>
-          <p><strong>Múltiplas APIs</strong> — Configure várias APIs no mesmo cliente simultaneamente.</p>
-        </div>
-        <div class="hl-item">
-          <span class="hl-num">03</span>
-          <p><strong>Conversão automática</strong> — Swagger 2.0 é convertido para OpenAPI 3.0 automaticamente.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="how-it-works">
-      <h3>Como funciona?</h3>
-      <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;">No transporte <strong>stdio</strong> (padrão):</p>
-      <div class="step-flow">
-        <div class="flow-item">
-          <div class="flow-num">01</div>
-          <div class="flow-text">
-            <strong>Configurar <code>MCP_SPEC_URL</code></strong>
-            <span>Define a variável no teu cliente MCP favorito.</span>
-          </div>
-        </div>
-        <div class="flow-item">
-          <div class="flow-num">02</div>
-          <div class="flow-text">
-            <strong>Download e conversão</strong>
-            <span>O servidor baixa e converte a especificação da API.</span>
-          </div>
-        </div>
-        <div class="flow-item">
-          <div class="flow-num">03</div>
-          <div class="flow-text">
-            <strong>Geração das ferramentas</strong>
-            <span>Ferramentas MCP criadas automaticamente a partir dos endpoints.</span>
-          </div>
-        </div>
-        <div class="flow-item">
-          <div class="flow-num">04</div>
-          <div class="flow-text">
-            <strong>LLM usa as ferramentas</strong>
-            <span>O modelo chama a API como se fossem funções nativas.</span>
-          </div>
-        </div>
-        <div class="flow-item">
-          <div class="flow-num">05</div>
-          <div class="flow-text">
-            <strong>Ciclo encerrado</strong>
-            <span>O servidor termina quando o cliente desconecta.</span>
-          </div>
-        </div>
-      </div>
-      <div class="sse-note">
-        <strong>Nota SSE/HTTP:</strong> Para transporte SSE, o servidor pode correr de forma independente num host remoto, sem depender do ciclo de vida do cliente.
       </div>
     </div>
   </div>
