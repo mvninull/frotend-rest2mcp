@@ -132,6 +132,14 @@ h1 em { font-style: normal; color: var(--accent); }
 }
 .btn-ghost:hover { border-color: var(--ink); }
 
+.lang-btn {
+  background: var(--ink); color: white;
+  padding: 8px 16px; border: none; border-radius: 6px;
+  font-family: var(--display); font-weight: 700; font-size: 0.8rem;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em;
+}
+.lang-btn:hover { background: var(--accent); transform: translateY(-1px); }
+
 .hero-badges {
   display: flex; gap: 24px; margin-top: 3rem; flex-wrap: wrap;
   animation: fadeUp 0.7s 0.4s ease both;
@@ -401,16 +409,19 @@ footer {
 
 <!-- NAV -->
 <nav>
-  <div class="nav-inner">
-    <div class="logo"><span class="logo-dot"></span>MCP Universal</div>
-    <ul class="nav-links">
-      <li><a href="#about">Sobre</a></li>
-      <li><a href="#features">Recursos</a></li>
-      <li><a href="#examples">Exemplos</a></li>
-      <li><a href="#installation">Instalação</a></li>
-      <li><a href="#quickstart">Quick Start</a></li>
-    </ul>
-  </div>
+    <div class="nav-inner">
+      <div class="logo"><span class="logo-dot"></span> MCP Server Universal</div>
+      <ul class="nav-links">
+        <li><a href="#about" data-pt="Sobre" data-en="About">Sobre</a></li>
+        <li><a href="#transports" data-pt="Transportes" data-en="Transports">Transportes</a></li>
+        <li><a href="#features" data-pt="Recursos" data-en="Features">Recursos</a></li>
+        <li><a href="#examples" data-pt="Exemplo" data-en="Examples">Exemplo</a></li>
+        <li><a href="#installation" data-pt="Instalação" data-en="Installation">Instalação</a></li>
+        <li><a href="#quickstart" data-pt="Quick Start" data-en="Quick Start">Quick Start</a></li>
+        <li><a href="#config" data-pt="Configuração" data-en="Configuration">Configuração</a></li>
+        <li><button id="langToggle" class="lang-btn" onclick="toggleLanguage()">EN</button></li>
+      </ul>
+    </div>
 </nav>
 
 <!-- HERO -->
@@ -418,12 +429,16 @@ footer {
   <div class="hero-bg"></div>
   <div class="hero-grid"></div>
   <div class="hero-inner">
-    <div class="hero-tag"><span></span>v1.0.0 · Matias Fernando</div>
-    <h1>Converte <em>qualquer</em><br>API em MCP</h1>
-    <p class="hero-sub">Sem escrever código. Apenas configure a URL da spec OpenAPI/Swagger e a tua API fica disponível como ferramentas MCP para LLMs em segundos.</p>
+    <div class="hero-tag" id="hero_tag"><span></span>v1.0.0 · Matias Fernando</div>
+    <h1 id="hero_title">Converta <strong>QUALQUER API</strong> em um Servidor MCP</h1>
+    <p class="hero-sub" id="hero_subtitle">Sem escrever código. Apenas configure a URL da spec OpenAPI/Swagger e a tua API fica disponível como ferramentas MCP para LLMs em segundos.</p>
     <div class="hero-ctas">
-      <a href="#installation" class="btn-primary">Começar agora →</a>
-      <a href="#about" class="btn-ghost">Como funciona</a>
+      <a href="#about" class="btn-primary" id="hero_cta1">Começar agora</a>
+      <a href="https://github.com/mvninull/open-mcp" class="btn-ghost" id="hero_cta2">Ver documentação</a>
+    </div>
+    <div class="hero-badges">
+      <div class="badge" id="hero_badge1"><span>✦</span> <b>Zero</b> código necessário</div>
+      <div class="badge" id="hero_badge2"><span>⟳</span> <b>Swagger 2.0</b> → OpenAPI 3.0</div>
     </div>
     <div class="hero-badges">
       <div class="badge"><span>⚡</span> <b>Segundos</b> de configuração</div>
@@ -439,77 +454,77 @@ footer {
   <h2>Por que este<br>projecto existe?</h2>
   <div class="about-layout">
     <div>
-      <p style="color:var(--muted);margin-bottom:1rem;font-weight:300;">LLMs modernos têm capacidades incríveis, mas não conseguem interagir diretamente com APIs REST existentes. O Protocolo MCP resolve isso, mas exige que cada API tenha um servidor dedicado.</p>
-      <p style="color:var(--muted);margin-bottom:1.5rem;font-weight:300;">O <strong style="color:var(--ink)">MCP Server Universal</strong> elimina essa barreira: forneces a URL da spec OpenAPI/Swagger, e o servidor gera automaticamente as ferramentas MCP correspondentes.</p>
+      <p style="color:var(--muted);margin-bottom:1rem;font-weight:300;" id="about_p1">LLMs modernos têm capacidades incríveis, mas não conseguem interagir diretamente com APIs REST existentes. O Protocolo MCP resolve isso, mas exige que cada API tenha um servidor dedicado.</p>
+      <p style="color:var(--muted);margin-bottom:1.5rem;font-weight:300;" id="about_p2">O <strong style="color:var(--ink)">MCP Server Universal</strong> elimina essa barreira: forneces a URL da spec OpenAPI/Swagger, e o servidor gera automaticamente as ferramentas MCP correspondentes.</p>
 
-      <div class="callout problem">
-        <strong>❌ Problema</strong>
-        LLMs não conseguem chamar endpoints REST diretamente, e cada API precisaria de um servidor MCP dedicado.
-      </div>
-      <div class="callout solution">
-        <strong>✅ Solução</strong>
-        Conversão automática de specs OpenAPI/Swagger para ferramentas MCP — sem código adicional.
-      </div>
+        <div class="callout problem">
+          <strong id="about_problem_title">❌ Problema</strong>
+          <span id="about_problem_text">LLMs não conseguem chamar endpoints REST diretamente, e cada API precisaria de um servidor MCP dedicado.</span>
+        </div>
+        <div class="callout solution">
+          <strong id="about_solution_title">✅ Solução</strong>
+          <span id="about_solution_text">Conversão automática de specs OpenAPI/Swagger para ferramentas MCP — sem código adicional.</span>
+        </div>
 
       <div class="highlights-box">
-        <h4>✨ Destaques fundamentais</h4>
-        <div class="hl-item">
-          <span class="hl-num">01</span>
-          <p><strong>Zero código</strong> — Apenas configure a URL da spec no cliente MCP.</p>
-        </div>
-        <div class="hl-item">
-          <span class="hl-num">02</span>
-          <p><strong>Múltiplas APIs</strong> — Configure várias APIs no mesmo cliente simultaneamente.</p>
-        </div>
-        <div class="hl-item">
-          <span class="hl-num">03</span>
-          <p><strong>Conversão automática</strong> — Swagger 2.0 é convertido para OpenAPI 3.0 automaticamente.</p>
-        </div>
+        <h4 id="highlights_title">✨ Destaques fundamentais</h4>
+          <div class="hl-item" id="hl1">
+            <span class="hl-num">01</span>
+            <p><strong>Zero código</strong> — Apenas configure a URL da spec no cliente MCP.</p>
+          </div>
+          <div class="hl-item" id="hl2">
+            <span class="hl-num">02</span>
+            <p><strong>Múltiplas APIs</strong> — Configure várias APIs no mesmo cliente simultaneamente.</p>
+          </div>
+          <div class="hl-item" id="hl3">
+            <span class="hl-num">03</span>
+            <p><strong>Conversão automática</strong> — Swagger 2.0 é convertido para OpenAPI 3.0 automaticamente.</p>
+          </div>
       </div>
     </div>
 
     <div class="how-it-works">
-      <h3>Como funciona?</h3>
-      <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;">No transporte <strong>stdio</strong> (padrão):</p>
+      <h3 id="how_it_works">Como funciona?</h3>
+      <p style="color:var(--muted);font-size:0.88rem;margin-bottom:1.5rem;" id="stdio_note">No transporte <strong>stdio</strong> (padrão):</p>
       <div class="step-flow">
         <div class="flow-item">
           <div class="flow-num">01</div>
           <div class="flow-text">
-            <strong>Configurar <code>MCP_SPEC_URL</code></strong>
-            <span>Define a variável no teu cliente MCP favorito.</span>
+            <strong id="flow1_title">Configurar <code>MCP_SPEC_URL</code></strong>
+            <span id="flow1_desc">Define a variável no teu cliente MCP favorito.</span>
           </div>
         </div>
         <div class="flow-item">
           <div class="flow-num">02</div>
           <div class="flow-text">
-            <strong>Download e conversão</strong>
-            <span>O servidor baixa e converte a especificação da API.</span>
+            <strong id="flow2_title">Download e conversão</strong>
+            <span id="flow2_desc">O servidor baixa e converte a especificação da API.</span>
           </div>
         </div>
         <div class="flow-item">
           <div class="flow-num">03</div>
           <div class="flow-text">
-            <strong>Geração das ferramentas</strong>
-            <span>Ferramentas MCP criadas automaticamente a partir dos endpoints.</span>
+            <strong id="flow3_title">Geração das ferramentas</strong>
+            <span id="flow3_desc">Ferramentas MCP criadas automaticamente a partir dos endpoints.</span>
           </div>
         </div>
         <div class="flow-item">
           <div class="flow-num">04</div>
           <div class="flow-text">
-            <strong>LLM usa as ferramentas</strong>
-            <span>O modelo chama a API como se fossem funções nativas.</span>
+            <strong id="flow4_title">LLM usa as ferramentas</strong>
+            <span id="flow4_desc">O modelo chama a API como se fossem funções nativas.</span>
           </div>
         </div>
         <div class="flow-item">
           <div class="flow-num">05</div>
           <div class="flow-text">
-            <strong>Ciclo encerrado</strong>
-            <span>O servidor termina quando o cliente desconecta.</span>
+            <strong id="flow5_title">Ciclo encerrado</strong>
+            <span id="flow5_desc">O servidor termina quando o cliente desconecta.</span>
           </div>
         </div>
       </div>
       <div class="sse-note">
-        <strong>Nota SSE/HTTP:</strong> Para transporte SSE, o servidor pode correr de forma independente num host remoto, sem depender do ciclo de vida do cliente.
+        <strong id="sse_note">Nota SSE/HTTP:</strong> Para transporte SSE, o servidor pode correr de forma independente num host remoto, sem depender do ciclo de vida do cliente.
       </div>
     </div>
   </div>
@@ -517,16 +532,16 @@ footer {
 
 <!-- TRANSPORT CHANNELS -->
 <section class="section" id="transports">
-  <div class="section-label">// 02 — Canais de transporte</div>
-  <h2>STDIO, HTTP e SSE<br>três modos de uso</h2>
-  <p class="section-desc">O MCP Server Universal suporta três canais de transporte, cada um ideal para diferentes cenários de integração.</p>
+  <div class="section-label" id="transports_label">// 02 — Canais de transporte</div>
+  <h2 id="transports_title">STDIO, HTTP e SSE<br>três modos de uso</h2>
+  <p class="section-desc" id="transports_desc">O MCP Server Universal suporta três canais de transporte, cada um ideal para diferentes cenários de integração.</p>
 
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2rem;">
     <!-- STDIO -->
     <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:2rem;transition:all 0.3s;">
       <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Transporte STDIO</div>
-      <h3 style="font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;">Padrão — Cliente spawna</h3>
-      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">Ideal para integração direta com clientes MCP locais (VS Code, Claude Desktop, Cursor).</p>
+      <h3 style="font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;" id="stdio_title">Padrão — Cliente spawna</h3>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;" id="stdio_desc">Ideal para integração direta com clientes MCP locais (VS Code, Claude Desktop, Cursor).</p>
       <div style="background:var(--paper);border-radius:8px;padding:1rem;margin-bottom:1rem;">
         <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">CICLO DE VIDA</div>
         <div style="font-size:0.88rem;font-weight:500;">Cliente spawna/killa processo</div>
@@ -541,8 +556,8 @@ footer {
     <!-- HTTP -->
     <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:2rem;transition:all 0.3s;">
       <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent2);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Transporte HTTP</div>
-      <h3 style="font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;">Servidor independente</h3>
-      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">Ideal quando o servidor precisa rodar de forma contínua em host remoto ou local.</p>
+      <h3 style="font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;" id="http_title">Servidor independente</h3>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;" id="http_desc">Ideal quando o servidor precisa rodar de forma contínua em host remoto ou local.</p>
       <div style="background:var(--paper);border-radius:8px;padding:1rem;margin-bottom:1rem;">
         <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">CICLO DE VIDA</div>
         <div style="font-size:0.88rem;font-weight:500;">Contínuo (até parar manualmente)</div>
@@ -572,14 +587,14 @@ footer {
   </div>
 
   <!-- Usage Examples -->
-  <div style="margin-top:3rem;background:var(--ink);border-radius:12px;padding:2.5rem;color:white;">
-    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent2);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Exemplos de uso com --inspect</div>
-    <h3 style="font-family:var(--display);font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;letter-spacing:-0.02em;">Como usar com e sem --inspect</h3>
+    <div style="margin-top:3rem;background:var(--ink);border-radius:12px;padding:2.5rem;color:white;">
+    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent2);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;" id="usage_label">Exemplos de uso com --inspect</div>
+    <h3 style="font-family:var(--display);font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;letter-spacing:-0.02em;" id="usage_title">Como usar com e sem --inspect</h3>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;">
       <!-- Com --inspect -->
       <div>
-        <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;">✨ COM INSPECTOR</div>
+        <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;" id="with_inspect">✨ COM INSPECTOR</div>
         <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1.25rem;font-family:var(--mono);font-size:0.82rem;line-height:1.8;">
           <div style="color:var(--accent2);margin-bottom:0.5rem;"># STDIO — Inspector spawna diretamente</div>
           <div style="color:rgba(255,255,255,0.7);">python main.py --inspect --transport stdio</div>
@@ -592,7 +607,7 @@ footer {
 
       <!-- Sem --inspect -->
       <div>
-        <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;">🚀 PRODUÇÃO (SEM INSPECT)</div>
+        <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;" id="production">🚀 PRODUÇÃO (SEM INSPECT)</div>
         <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1.25rem;font-family:var(--mono);font-size:0.82rem;line-height:1.8;">
           <div style="color:var(--accent2);margin-bottom:0.5rem;"># STDIO — Cliente spawna (padrão)</div>
           <div style="color:rgba(255,255,255,0.7);">python main.py --transport stdio</div>
@@ -611,40 +626,40 @@ footer {
 <!-- FEATURES -->
 <div class="features-bg">
   <div class="features-section" id="features">
-    <div class="section-label">// 03 — Recursos</div>
-    <h2 style="color:white">Tudo o que precisas,<br>pronto a usar.</h2>
-    <p class="section-desc">Seis recursos que tornam o MCP Server Universal a escolha mais rápida para conectar LLMs às tuas APIs.</p>
+    <div class="section-label" id="features_label">// 03 — Recursos</div>
+    <h2 style="color:white" id="features_title">Tudo o que precisas,<br>pronto a usar.</h2>
+    <p class="section-desc" id="features_desc">Seis recursos que tornam o MCP Server Universal a escolha mais rápida para conectar LLMs às tuas APIs.</p>
 
     <div class="features-grid">
       <div class="feat-card">
         <div class="feat-icon">🌐</div>
-        <h3>Qualquer API, Zero Código</h3>
-        <p>Apenas configura a URL da spec. Sem desenvolver servidores MCP individuais para cada API.</p>
+        <h3 id="feat1_title">Qualquer API, Zero Código</h3>
+        <p id="feat1_desc">Apenas configura a URL da spec. Sem desenvolver servidores MCP individuais para cada API.</p>
       </div>
       <div class="feat-card">
         <div class="feat-icon">🔄</div>
-        <h3>Múltiplas APIs Simultâneas</h3>
-        <p>Configura várias APIs no mesmo cliente MCP, cada uma com o seu próprio servidor.</p>
+        <h3 id="feat2_title">Múltiplas APIs Simultâneas</h3>
+        <p id="feat2_desc">Configura várias APIs no mesmo cliente MCP, cada uma com o seu próprio servidor.</p>
       </div>
       <div class="feat-card">
         <div class="feat-icon">🖥️</div>
-        <h3>Conversão Automática</h3>
-        <p>Swagger 2.0 desatualizado? Convertido automaticamente para OpenAPI 3.0 via swagger2openapi.</p>
+        <h3 id="feat3_title">Conversão Automática</h3>
+        <p id="feat3_desc">Swagger 2.0 desatualizado? Convertido automaticamente para OpenAPI 3.0 via swagger2openapi.</p>
       </div>
       <div class="feat-card">
         <div class="feat-icon">🔍</div>
-        <h3>Modo Inspector</h3>
-        <p>Testa e depura as ferramentas geradas com o MCP Inspector integrado no próprio servidor.</p>
+        <h3 id="feat4_title">Modo Inspector</h3>
+        <p id="feat4_desc">Testa e depura as ferramentas geradas com o MCP Inspector integrado no próprio servidor.</p>
       </div>
       <div class="feat-card">
         <div class="feat-icon">🎨</div>
-        <h3>Logging Colorido</h3>
-        <p>Logs informativos com cores para depuração rápida e eficaz no terminal.</p>
+        <h3 id="feat5_title">Logging Colorido</h3>
+        <p id="feat5_desc">Logs informativos com cores para depuração rápida e eficaz no terminal.</p>
       </div>
       <div class="feat-card">
         <div class="feat-icon">🧪</div>
-        <h3>API de Teste Incluída</h3>
-        <p>Inclui <code style="color:var(--accent2);background:rgba(0,212,170,0.1)">loja_api.py</code> — uma API FastAPI de demonstração para testes locais imediatos.</p>
+        <h3 id="feat6_title">API de Teste Incluída</h3>
+        <p id="feat6_desc">Inclui <code style="color:var(--accent2);background:rgba(0,212,170,0.1)">loja_api.py</code> — uma API FastAPI de demonstração para testes locais imediatos.</p>
       </div>
     </div>
   </div>
@@ -652,15 +667,15 @@ footer {
 
 <!-- EXAMPLES -->
 <section class="section" id="examples">
-  <div class="section-label">// 04 — Exemplo prático</div>
-  <h2>Duas APIs,<br>um servidor.</h2>
-  <p class="section-desc">Configura múltiplas APIs no mesmo cliente MCP. Veja a diferença entre uma API externa (Swagger 2.0) e uma API local (OpenAPI 3.0).</p>
+  <div class="section-label" id="examples_label">// 04 — Exemplo prático</div>
+  <h2 id="examples_title">Duas APIs,<br>um servidor.</h2>
+  <p class="section-desc" id="examples_desc">Configura múltiplas APIs no mesmo cliente MCP. Veja a diferença entre uma API externa (Swagger 2.0) e uma API local (OpenAPI 3.0).</p>
 
   <div class="apis-grid">
     <div class="api-card">
       <div class="api-card-head">
         <span>🌐</span>
-        <h3>PetStore API (Externa)</h3>
+        <h3 id="petstore_card">PetStore API (Externa)</h3>
         <span class="api-badge warn">Swagger 2.0</span>
       </div>
       <div class="api-card-body">
@@ -675,7 +690,7 @@ footer {
     <div class="api-card">
       <div class="api-card-head">
         <span>🏠</span>
-        <h3>Loja API (Local)</h3>
+        <h3 id="loja_card">Loja API (Local)</h3>
         <span class="api-badge ok">OpenAPI 3.0</span>
       </div>
       <div class="api-card-body">
@@ -722,9 +737,9 @@ footer {
 
 <!-- INSTALLATION -->
 <section class="section" id="installation">
-  <div class="section-label">// 05 — Instalação</div>
-  <h2>Instala em<br>segundos.</h2>
-  <p class="section-desc">Escolhe o método adequado para o teu sistema operativo.</p>
+    <div class="section-label" id="install_label">// 05 — Instalação</div>
+    <h2 id="install_title">Instala em<br>segundos.</h2>
+    <p class="section-desc" id="install_desc">Escolhe o método adequado para o teu sistema operativo.</p>
 
   <div class="tabs-row">
     <button class="tab-btn active" onclick="switchTab('makefile',this)">Makefile</button>
@@ -772,7 +787,7 @@ chmod +x setup.sh
     <div class="qs-step">
       <div class="qs-step-head">
         <div class="qs-num">01</div>
-        <h3>Clonar o Repositório</h3>
+        <h3 id="step1_title">Clonar o Repositório</h3>
       </div>
       <div class="qs-step-body">
         <div class="code-block">
@@ -785,7 +800,7 @@ cd open-mcp</pre>
     <div class="qs-step">
       <div class="qs-step-head">
         <div class="qs-num">02</div>
-        <h3>Configurar o Servidor MCP no Cliente</h3>
+        <h3 id="step2_title">Configurar o Servidor MCP no Cliente</h3>
       </div>
       <div class="qs-step-body">
         <p style="margin-bottom:1rem;">Após clonar, configura no ficheiro JSON do teu cliente MCP (VS Code, Claude, etc.):</p>
@@ -809,7 +824,7 @@ cd open-mcp</pre>
     <div class="qs-step">
       <div class="qs-step-head">
         <div class="qs-num">03</div>
-        <h3>Pronto! Verificar Instalação</h3>
+        <h3 id="step3_title">Pronto! Verificar Instalação</h3>
       </div>
       <div class="qs-step-body">
         <p>O script instala automaticamente: Python venv com <code>fastmcp</code>, <code>httpx</code> e <code>pydantic</code>, além de Node.js <code>swagger2openapi</code> globalmente.</p>
@@ -822,15 +837,15 @@ cd open-mcp</pre>
 
 <!-- QUICK START -->
 <section class="section" id="quickstart">
-  <div class="section-label">// 06 — Quick Start</div>
-  <h2>Em produção<br>em minutos.</h2>
-  <p class="section-desc">Usa a API de teste incluída (<code>loja_api.py</code>) para experimentar o servidor MCP localmente.</p>
+    <div class="section-label" id="quickstart_label">// 06 — Quick Start</div>
+    <h2 id="quickstart_title">Em produção<br>em minutos.</h2>
+    <p class="section-desc" id="quickstart_desc">Usa a API de teste incluída (<code>loja_api.py</code>) para experimentar o servidor MCP localmente.</p>
 
   <div class="steps-list">
     <div class="qs-step">
       <div class="qs-step-head">
         <div class="qs-num">1</div>
-        <h3>Iniciar API de Teste</h3>
+        <h3 id="qs_step1_title">Iniciar API de Teste</h3>
       </div>
       <div class="qs-step-body">
         <div class="code-block">
@@ -846,7 +861,7 @@ cd open-mcp</pre>
     <div class="qs-step">
       <div class="qs-step-head">
         <div class="qs-num">2</div>
-        <h3>Configurar Variáveis de Ambiente</h3>
+        <h3 id="qs_step2_title">Configurar Variáveis de Ambiente</h3>
       </div>
       <div class="qs-step-body">
         <div class="code-block">
@@ -859,7 +874,7 @@ $env:MCP_SERVER_NAME = "Loja API"</pre>
     <div class="qs-step">
       <div class="qs-step-head">
         <div class="qs-num">3</div>
-        <h3>Iniciar MCP Inspector</h3>
+        <h3 id="qs_step3_title">Iniciar MCP Inspector</h3>
       </div>
       <div class="qs-step-body">
         <div class="code-block">
@@ -873,7 +888,7 @@ $env:MCP_SERVER_NAME = "Loja API"</pre>
     <div class="qs-step">
       <div class="qs-step-head">
         <div class="qs-num">4</div>
-        <h3>Testar as Ferramentas</h3>
+        <h3 id="qs_step4_title">Testar as Ferramentas</h3>
       </div>
       <div class="qs-step-body">
         <p>No Inspector, clica em <strong>"List Tools"</strong> para ver as ferramentas geradas automaticamente a partir da Loja API — listar produtos, criar, actualizar e eliminar.</p>
@@ -886,9 +901,9 @@ $env:MCP_SERVER_NAME = "Loja API"</pre>
 
 <!-- CONFIG -->
 <section class="section" id="config">
-  <div class="section-label">// 07 — Configuração</div>
-  <h2>Clientes MCP<br>suportados.</h2>
-  <p class="section-desc">Exemplos de configuração para os principais clientes MCP.</p>
+    <div class="section-label" id="config_label">// 07 — Configuração</div>
+    <h2 id="config_title">Clientes MCP<br>suportados.</h2>
+    <p class="section-desc" id="config_desc">Exemplos de configuração para os principais clientes MCP.</p>
 
   <div class="config-grid">
     <div class="config-card">
@@ -949,7 +964,7 @@ $env:MCP_SERVER_NAME = "Loja API"</pre>
       <li><a href="https://swagger.io/specification/" target="_blank">OpenAPI Spec</a></li>
       <li><a href="#">Documentação</a></li>
     </ul>
-    <p class="footer-copy">© 2026 MCP Server Universal. Todos os direitos reservados.</p>
+    <p class="footer-copy" id="footer_copyright">© 2026 MCP Server Universal. Todos os direitos reservados.</p>
   </div>
 </footer>
 
@@ -960,6 +975,168 @@ function switchTab(id, btn) {
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
 }
+
+// Language toggle functionality
+let currentLang = 'pt';
+
+const translations = {
+  // Navigation
+  'nav_about': { pt: 'Sobre', en: 'About' },
+  'nav_transports': { pt: 'Transportes', en: 'Transports' },
+  'nav_features': { pt: 'Recursos', en: 'Features' },
+  'nav_examples': { pt: 'Exemplo', en: 'Examples' },
+  'nav_installation': { pt: 'Instalação', en: 'Installation' },
+  'nav_quickstart': { pt: 'Quick Start', en: 'Quick Start' },
+  'nav_config': { pt: 'Configuração', en: 'Configuration' },
+
+  // Hero
+  'hero_tag': { pt: 'v1.0.0 · Matias Fernando', en: 'v1.0.0 · Matias Fernando' },
+  'hero_title': { pt: 'Converta <strong>QUALQUER API</strong> em um Servidor MCP', en: 'Convert <strong>ANY API</strong> into an MCP Server' },
+  'hero_subtitle': { pt: 'Sem escrever código. Apenas configure a URL da spec OpenAPI/Swagger e a tua API fica disponível como ferramentas MCP para LLMs em segundos.', en: 'Zero code required. Just configure the OpenAPI/Swagger spec URL and your API becomes available as MCP tools for LLMs in seconds.' },
+  'hero_cta1': { pt: 'Começar agora', en: 'Get Started' },
+  'hero_cta2': { pt: 'Ver documentação', en: 'View Docs' },
+  'hero_badge1': { pt: '<span>✦</span> <b>Zero</b> código necessário', en: '<span>✦</span> <b>Zero</b> code required' },
+  'hero_badge2': { pt: '<span>⟳</span> <b>Swagger 2.0</b> → OpenAPI 3.0', en: '<span>⟳</span> <b>Swagger 2.0</b> → OpenAPI 3.0' },
+
+  // About
+  'about_label': { pt: '// 01 — Sobre o projeto', en: '// 01 — About the Project' },
+  'about_title': { pt: 'Por que este<br>projeto existe?', en: 'Why does this<br>project exist?' },
+  'about_p1': { pt: 'LLMs modernos têm capacidades incríveis, mas não conseguem interagir diretamente com APIs REST existentes. O Protocolo MCP resolve isso, mas exige que cada API tenha um servidor dedicado.', en: 'Modern LLMs have amazing capabilities, but they cannot interact directly with existing REST APIs. The MCP Protocol solves this, but requires each API to have a dedicated server.' },
+  'about_p2': { pt: 'O <strong style="color:var(--ink)">MCP Server Universal</strong> elimina essa barreira: forneces a URL da spec OpenAPI/Swagger, e o servidor gera automaticamente as ferramentas MCP correspondentes.', en: 'The <strong style="color:var(--ink)">MCP Server Universal</strong> eliminates this barrier: provide the OpenAPI/Swagger spec URL, and the server automatically generates the corresponding MCP tools.' },
+  'about_problem_title': { pt: '❌ Problema', en: '❌ Problem' },
+  'about_problem_text': { pt: 'LLMs não conseguem chamar endpoints REST diretamente, e cada API precisaria de um servidor MCP dedicado.', en: 'LLMs cannot call REST endpoints directly, and each API would need a dedicated MCP server.' },
+  'about_solution_title': { pt: '✅ Solução', en: '✅ Solution' },
+  'about_solution_text': { pt: 'Conversão automática de specs OpenAPI/Swagger para ferramentas MCP — sem código adicional.', en: 'Automatic conversion of OpenAPI/Swagger specs to MCP tools — no additional code.' },
+  'highlights_title': { pt: '✨ Destaques fundamentais', en: '✨ Key Highlights' },
+  'hl1': { pt: '<span class="hl-num">01</span><p><strong>Zero código</strong> — Apenas configure a URL da spec no cliente MCP.</p>', en: '<span class="hl-num">01</span><p><strong>Zero code</strong> — Just configure the spec URL in the MCP client.</p>' },
+  'hl2': { pt: '<span class="hl-num">02</span><p><strong>Múltiplas APIs</strong> — Configure várias APIs no mesmo cliente simultaneamente.</p>', en: '<span class="hl-num">02</span><p><strong>Multiple APIs</strong> — Configure multiple APIs in the same client simultaneously.</p>' },
+  'hl3': { pt: '<span class="hl-num">03</span><p><strong>Conversão automática</strong> — Swagger 2.0 é convertido para OpenAPI 3.0 automaticamente.</p>', en: '<span class="hl-num">03</span><p><strong>Automatic conversion</strong> — Swagger 2.0 is automatically converted to OpenAPI 3.0.</p>' },
+  'how_it_works': { pt: 'Como funciona?', en: 'How it works?' },
+  'stdio_note': { pt: 'No transporte <strong>stdio</strong> (padrão):', en: 'Using <strong>stdio</strong> transport (default):' },
+  'flow1_title': { pt: 'Configurar <code>MCP_SPEC_URL</code>', en: 'Configure <code>MCP_SPEC_URL</code>' },
+  'flow1_desc': { pt: 'Define a variável no teu cliente MCP favorito.', en: 'Set the variable in your favorite MCP client.' },
+  'flow2_title': { pt: 'Download e conversão', en: 'Download and conversion' },
+  'flow2_desc': { pt: 'O servidor baixa e converte a especificação da API.', en: 'The server downloads and converts the API specification.' },
+  'flow3_title': { pt: 'Geração das ferramentas', en: 'Tool generation' },
+  'flow3_desc': { pt: 'Ferramentas MCP criadas automaticamente a partir dos endpoints.', en: 'MCP tools automatically created from endpoints.' },
+  'flow4_title': { pt: 'LLM usa as ferramentas', en: 'LLM uses the tools' },
+  'flow4_desc': { pt: 'O modelo chama a API como se fossem funções nativas.', en: 'The model calls the API as if they were native functions.' },
+  'flow5_title': { pt: 'Ciclo encerrado', en: 'Cycle completed' },
+  'flow5_desc': { pt: 'O servidor termina quando o cliente desconecta.', en: 'The server ends when the client disconnects.' },
+  'sse_note': { pt: '<strong>Nota SSE/HTTP:</strong> Para transporte SSE, o servidor pode correr de forma independente num host remoto, sem depender do ciclo de vida do cliente.', en: '<strong>SSE/HTTP Note:</strong> For SSE transport, the server can run independently on a remote host, without depending on the client\'s lifecycle.' },
+
+  // Transports
+  'transports_label': { pt: '// 02 — Canais de transporte', en: '// 02 — Transport Channels' },
+  'transports_title': { pt: 'STDIO, HTTP e SSE<br>três modos de uso', en: 'STDIO, HTTP and SSE<br>three usage modes' },
+  'transports_desc': { pt: 'O MCP Server Universal suporta três canais de transporte, cada um ideal para diferentes cenários de integração.', en: 'The MCP Server Universal supports three transport channels, each ideal for different integration scenarios.' },
+  'stdio_title': { pt: 'Padrão — Cliente spawna', en: 'Default — Client spawns' },
+  'stdio_desc': { pt: 'Ideal para integração direta com clientes MCP locais (VS Code, Claude Desktop, Cursor).', en: 'Ideal for direct integration with local MCP clients (VS Code, Claude Desktop, Cursor).' },
+  'http_title': { pt: 'Servidor independente', en: 'Independent server' },
+  'http_desc': { pt: 'Ideal quando o servidor precisa rodar de forma contínua em host remoto ou local.', en: 'Ideal when the server needs to run continuously on a remote or local host.' },
+  'sse_title': { pt: 'Server-sent Events', en: 'Server-Sent Events' },
+  'sse_desc': { pt: 'Ideal para comunicação em tempo real via Server-Sent Events com suporte nativo.', en: 'Ideal for real-time communication via Server-Sent Events with native support.' },
+  'usage_label': { pt: 'Exemplos de uso com --inspect', en: 'Usage examples with --inspect' },
+  'usage_title': { pt: 'Como usar com e sem --inspect', en: 'How to use with and without --inspect' },
+  'with_inspect': { pt: '✨ COM INSPECTOR', en: '✨ WITH INSPECTOR' },
+  'production': { pt: '🚀 PRODUÇÃO (SEM INSPECT)', en: '🚀 PRODUCTION (NO INSPECT)' },
+
+  // Features
+  'features_label': { pt: '// 03 — Recursos', en: '// 03 — Features' },
+  'features_title': { pt: 'Tudo o que precisas,<br>pronto a usar.', en: 'Everything you need,<br>ready to use.' },
+  'features_desc': { pt: 'Seis recursos que tornam o MCP Server Universal a escolha mais rápida para conectar LLMs às tuas APIs.', en: 'Six features that make MCP Server Universal the fastest choice to connect LLMs to your APIs.' },
+  'feat1_title': { pt: 'Qualquer API, Zero Código', en: 'Any API, Zero Code' },
+  'feat1_desc': { pt: 'Apenas configura a URL da spec. Sem desenvolver servidores MCP individuais para cada API.', en: 'Just configure the spec URL. No need to develop individual MCP servers for each API.' },
+  'feat2_title': { pt: 'Múltiplas APIs Simultâneas', en: 'Multiple Simultaneous APIs' },
+  'feat2_desc': { pt: 'Configura várias APIs no mesmo cliente MCP, cada uma com o seu próprio servidor.', en: 'Configure multiple APIs in the same MCP client, each with its own server.' },
+  'feat3_title': { pt: 'Conversão Automática', en: 'Automatic Conversion' },
+  'feat3_desc': { pt: 'Swagger 2.0 desatualizado? Convertido automaticamente para OpenAPI 3.0 via swagger2openapi.', en: 'Outdated Swagger 2.0? Automatically converted to OpenAPI 3.0 via swagger2openapi.' },
+  'feat4_title': { pt: 'Modo Inspector', en: 'Inspector Mode' },
+  'feat4_desc': { pt: 'Testa e depura as ferramentas geradas com o MCP Inspector integrado no próprio servidor.', en: 'Test and debug generated tools with the MCP Inspector integrated into the server itself.' },
+  'feat5_title': { pt: 'Logging Colorido', en: 'Colorful Logging' },
+  'feat5_desc': { pt: 'Logs informativos com cores para depuração rápida e eficaz no terminal.', en: 'Informative logs with colors for fast and effective debugging in the terminal.' },
+  'feat6_title': { pt: 'API de Teste Incluída', en: 'Test API Included' },
+  'feat6_desc': { pt: 'Inclui <code style="color:var(--accent2);background:rgba(0,212,170,0.1)">loja_api.py</code> — uma API FastAPI de demonstração para testes locais imediatos.', en: 'Includes <code style="color:var(--accent2);background:rgba(0,212,170,0.1)">loja_api.py</code> — a FastAPI demo API for immediate local testing.' },
+
+  // Examples
+  'examples_label': { pt: '// 04 — Exemplo prático', en: '// 04 — Practical Example' },
+  'examples_title': { pt: 'Duas APIs, Um Servidor', en: 'Two APIs, One Server' },
+  'examples_desc': { pt: 'Configura múltiplas APIs no mesmo cliente MCP. Veja a diferença entre uma API externa (Swagger 2.0) e uma API local (OpenAPI 3.0).', en: 'Configure multiple APIs in the same MCP client. See the difference between an external API (Swagger 2.0) and a local API (OpenAPI 3.0).' },
+  'petstore_card': { pt: '🌐 PetStore API (Externa)', en: '🌐 PetStore API (External)' },
+  'swagger_note': { pt: '<strong>Swagger 2.0 desatualizado</strong><br>O servidor converte automaticamente para OpenAPI 3.0 usando swagger2openapi', en: '<strong>Outdated Swagger 2.0</strong><br>The server automatically converts to OpenAPI 3.0 using swagger2openapi' },
+  'loja_card': { pt: '🏠 Loja API (Local)', en: '🏠 Loja API (Local)' },
+  'openapi_note': { pt: '<strong>OpenAPI 3.0 nativo</strong><br>Usado diretamente sem conversão, mais rápido e confiável', en: '<strong>Native OpenAPI 3.0</strong><br>Used directly without conversion, faster and more reliable' },
+  'config_example': { pt: '💡 Configuração no VS Code (Múltiplas APIs)', en: '💡 VS Code Configuration (Multiple APIs)' },
+
+  // Installation
+  'install_label': { pt: '// 05 — Instalação', en: '// 05 — Installation' },
+  'install_title': { pt: 'Começar em minutos', en: 'Get Started in Minutes' },
+  'install_desc': { pt: 'Escolhe o método adequado para o teu sistema operativo.', en: 'Choose the appropriate method for your operating system.' },
+  'makefile_title': { pt: 'Makefile (Cross-platform)', en: 'Makefile (Cross-platform)' },
+  'makefile_desc': { pt: 'Fornece comandos rápidos para instalar dependências:', en: 'Provides quick commands to install dependencies:' },
+  'linux_title': { pt: 'Linux / macOS', en: 'Linux / macOS' },
+  'linux_desc': { pt: 'Script Bash para sistemas Unix:', en: 'Bash script for Unix systems:' },
+  'windows_title': { pt: 'Windows', en: 'Windows' },
+  'windows_desc': { pt: 'Script PowerShell para Windows:', en: 'PowerShell script for Windows:' },
+  'install_note': { pt: 'Nota: No Windows, o Makefile funciona via Git Bash, WSL ou Cygwin.', en: 'Note: On Windows, the Makefile works via Git Bash, WSL, or Cygwin.' },
+
+  // Quick Start
+  'quickstart_label': { pt: '// 06 — Quick Start', en: '// 06 — Quick Start' },
+  'quickstart_title': { pt: 'Quick Start (Teste Local)', en: 'Quick Start (Local Test)' },
+  'quickstart_desc': { pt: 'Usa a API de teste incluída (<code>loja_api.py</code>) para experimentar o servidor MCP localmente.', en: 'Use the included test API (<code>loja_api.py</code>) to try out the MCP server locally.' },
+  'step1_title': { pt: 'Iniciar API de Teste', en: 'Start Test API' },
+  'step1_desc': { pt: 'Terminal 1: Iniciar loja_api.py', en: 'Terminal 1: Start loja_api.py' },
+  'step2_title': { pt: 'Configurar Variáveis de Ambiente', en: 'Configure Environment Variables' },
+  'step2_desc': { pt: 'Terminal 2 (PowerShell):', en: 'Terminal 2 (PowerShell):' },
+  'step3_title': { pt: 'Iniciar MCP Inspector', en: 'Start MCP Inspector' },
+  'step3_desc': { pt: 'Terminal 2:', en: 'Terminal 2:' },
+  'step4_title': { pt: 'Testar Ferramentas', en: 'Test Tools' },
+  'step4_desc': { pt: 'No Inspector, clica em "List Tools" para ver as ferramentas geradas automaticamente a partir da Loja API.', en: 'In the Inspector, click "List Tools" to see the automatically generated tools from the Loja API.' },
+  'inspector_note': { pt: 'O Inspector abrirá em <code>http://localhost:6274</code> onde poderá ver e testar as tools geradas automaticamente a partir da Loja API.', en: 'Inspector will open at <code>http://localhost:6274</code> where you can view and test the automatically generated tools from the Loja API.' },
+
+  // Config
+  'config_label': { pt: '// 07 — Configuração', en: '// 07 — Configuration' },
+  'config_title': { pt: 'Configuração no Cliente MCP', en: 'MCP Client Configuration' },
+  'config_desc': { pt: 'Exemplos de configuração para os principais clientes MCP.', en: 'Configuration examples for major MCP clients.' },
+  'vscode_title': { pt: 'VS Code / OpenCode', en: 'VS Code / OpenCode' },
+  'vscode_desc': { pt: 'Edita o ficheiro <code>settings.json</code>:', en: 'Edit the <code>settings.json</code> file:' },
+  'claude_title': { pt: 'Claude Desktop', en: 'Claude Desktop' },
+  'claude_desc': { pt: 'Edita o ficheiro de configuração:', en: 'Edit the configuration file:' },
+  'cursor_title': { pt: 'Cursor', en: 'Cursor' },
+  'cursor_desc': { pt: 'Edita o ficheiro <code>~/.cursor/mcp.json</code>:', en: 'Edit the <code>~/.cursor/mcp.json</code> file:' },
+  'config_minimal': { pt: 'Configuração mínima (produção)', en: 'Minimal configuration (production)' },
+
+  // Footer
+  'footer_brand': { pt: 'MCP Server Universal', en: 'MCP Server Universal' },
+  'footer_version': { pt: 'Versão 1.0.0', en: 'Version 1.0.0' },
+  'footer_github': { pt: 'GitHub', en: 'GitHub' },
+  'footer_docs': { pt: 'Documentação', en: 'Documentation' },
+  'footer_spec': { pt: 'OpenAPI Spec', en: 'OpenAPI Spec' },
+  'footer_copyright': { pt: '© 2026 MCP Server Universal. Todos os direitos reservados.', en: '© 2026 MCP Server Universal. All rights reserved.' }
+};
+
+function toggleLanguage() {
+  currentLang = currentLang === 'pt' ? 'en' : 'pt';
+  document.getElementById('langToggle').textContent = currentLang === 'pt' ? 'EN' : 'PT';
+  document.documentElement.lang = currentLang === 'pt' ? 'pt-BR' : 'en';
+
+  // Update all elements with data attributes
+  document.querySelectorAll('[data-pt][data-en]').forEach(el => {
+    el.textContent = el.getAttribute('data-' + currentLang);
+  });
+
+  // Update elements with translation keys
+  Object.keys(translations).forEach(key => {
+    const el = document.getElementById(key);
+    if (el) {
+      el.innerHTML = translations[key][currentLang];
+    }
+  });
+}
+
+// Initialize with Portuguese
+window.onload = function() {
+  document.getElementById('langToggle').textContent = 'EN';
+};
 </script>
 </body>
 </html>
