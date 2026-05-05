@@ -433,9 +433,100 @@ footer {
   </div>
 </section>
 
+<!-- TRANSPORT CHANNELS -->
+<section class="section" id="transports">
+  <div class="section-label">// 01 — Canais de transporte</div>
+  <h2>STDIO, HTTP e SSE<br>três modos de uso</h2>
+  <p class="section-desc">O MCP Server Universal suporta três canais de transporte, cada um ideal para diferentes cenários de integração.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2rem;">
+    <!-- STDIO -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:2rem;transition:all 0.3s;">
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Transporte STDIO</div>
+      <h3 style="font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;">Padrão — Cliente spawna</h3>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">Ideal para integração direta com clientes MCP locais (VS Code, Claude Desktop, Cursor).</p>
+      <div style="background:var(--paper);border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">CICLO DE VIDA</div>
+        <div style="font-size:0.88rem;font-weight:500;">Cliente spawna/killa processo</div>
+      </div>
+      <div style="background:var(--paper);border-radius:8px;padding:1rem;">
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">INSPECTOR (--inspect)</div>
+        <div style="font-size:0.88rem;font-weight:500;">Inspector spawna processo diretamente</div>
+      </div>
+      <div style="margin-top:1.25rem;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">python main.py --transport stdio</div>
+    </div>
+
+    <!-- HTTP -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:2rem;transition:all 0.3s;">
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent2);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Transporte HTTP</div>
+      <h3 style="font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;">Servidor independente</h3>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">Ideal quando o servidor precisa rodar de forma contínua em host remoto ou local.</p>
+      <div style="background:var(--paper);border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">CICLO DE VIDA</div>
+        <div style="font-size:0.88rem;font-weight:500;">Contínuo (até parar manualmente)</div>
+      </div>
+      <div style="background:var(--paper);border-radius:8px;padding:1rem;">
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">INSPECTOR (--inspect)</div>
+        <div style="font-size:0.88rem;font-weight:500;">Servidor HTTP + Inspector no browser</div>
+      </div>
+      <div style="margin-top:1.25rem;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">python main.py --transport http --port 8081</div>
+    </div>
+
+    <!-- SSE -->
+    <div style="background:white;border:1px solid var(--border);border-radius:12px;padding:2rem;transition:all 0.3s;">
+      <div style="font-family:var(--mono);font-size:0.7rem;color:var(--warn);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Transporte SSE</div>
+      <h3 style="font-family:var(--display);font-size:1.3rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.75rem;">Server-Sent Events</h3>
+      <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">Ideal para comunicação em tempo real via Server-Sent Events com suporte nativo.</p>
+      <div style="background:var(--paper);border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">CICLO DE VIDA</div>
+        <div style="font-size:0.88rem;font-weight:500;">Contínuo (até parar manualmente)</div>
+      </div>
+      <div style="background:var(--paper);border-radius:8px;padding:1rem;">
+        <div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted);margin-bottom:0.5rem;">INSPECTOR (--inspect)</div>
+        <div style="font-size:0.88rem;font-weight:500;">Servidor SSE + Inspector no browser</div>
+      </div>
+      <div style="margin-top:1.25rem;font-family:var(--mono);font-size:0.78rem;color:var(--muted);">python main.py --transport sse --port 8081</div>
+    </div>
+  </div>
+
+  <!-- Usage Examples -->
+  <div style="margin-top:3rem;background:var(--ink);border-radius:12px;padding:2.5rem;color:white;">
+    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--accent2);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem;">Exemplos de uso com --inspect</div>
+    <h3 style="font-family:var(--display);font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;letter-spacing:-0.02em;">Como usar com e sem --inspect</h3>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;">
+      <!-- Com --inspect -->
+      <div>
+        <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;">✨ COM INSPECTOR</div>
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1.25rem;font-family:var(--mono);font-size:0.82rem;line-height:1.8;">
+          <div style="color:var(--accent2);margin-bottom:0.5rem;"># STDIO — Inspector spawna diretamente</div>
+          <div style="color:rgba(255,255,255,0.7);">python main.py --inspect --transport stdio</div>
+          <div style="color:var(--accent2);margin:1rem 0 0.5rem;"># HTTP — Servidor + Inspector</div>
+          <div style="color:rgba(255,255,255,0.7);">python main.py --inspect --transport http --port 8081</div>
+          <div style="color:var(--accent2);margin:1rem 0 0.5rem;"># SSE — Servidor + Inspector</div>
+          <div style="color:rgba(255,255,255,0.7);">python main.py --inspect --transport sse --port 8081</div>
+        </div>
+      </div>
+
+      <!-- Sem --inspect -->
+      <div>
+        <div style="font-family:var(--mono);font-size:0.72rem;color:rgba(255,255,255,0.5);margin-bottom:0.75rem;">🚀 PRODUÇÃO (SEM INSPECT)</div>
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1.25rem;font-family:var(--mono);font-size:0.82rem;line-height:1.8;">
+          <div style="color:var(--accent2);margin-bottom:0.5rem;"># STDIO — Cliente spawna (padrão)</div>
+          <div style="color:rgba(255,255,255,0.7);">python main.py --transport stdio</div>
+          <div style="color:var(--accent2);margin:1rem 0 0.5rem;"># HTTP — Servidor independente</div>
+          <div style="color:rgba(255,255,255,0.7);">python main.py --transport http --port 8081</div>
+          <div style="color:var(--accent2);margin:1rem 0 0.5rem;"># SSE — Servidor independente</div>
+          <div style="color:rgba(255,255,255,0.7);">python main.py --transport sse --port 8081</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ABOUT -->
 <section class="section" id="about">
-  <div class="section-label">// 01 — Sobre o projecto</div>
+  <div class="section-label">// 02 — Sobre o projecto</div>
   <h2>Por que este<br>projecto existe?</h2>
   <div class="about-layout">
     <div>
@@ -520,7 +611,7 @@ footer {
 <!-- FEATURES -->
 <div class="features-bg">
   <div class="features-section" id="features">
-    <div class="section-label">// 02 — Recursos</div>
+    <div class="section-label">// 03 — Recursos</div>
     <h2 style="color:white">Tudo o que precisas,<br>pronto a usar.</h2>
     <p class="section-desc">Seis recursos que tornam o MCP Server Universal a escolha mais rápida para conectar LLMs às tuas APIs.</p>
 
@@ -561,7 +652,7 @@ footer {
 
 <!-- EXAMPLES -->
 <section class="section" id="examples">
-  <div class="section-label">// 03 — Exemplo prático</div>
+  <div class="section-label">// 04 — Exemplo prático</div>
   <h2>Duas APIs,<br>um servidor.</h2>
   <p class="section-desc">Configura múltiplas APIs no mesmo cliente MCP. Veja a diferença entre uma API externa (Swagger 2.0) e uma API local (OpenAPI 3.0).</p>
 
@@ -631,7 +722,7 @@ footer {
 
 <!-- INSTALLATION -->
 <section class="section" id="installation">
-  <div class="section-label">// 04 — Instalação</div>
+  <div class="section-label">// 05 — Instalação</div>
   <h2>Instala em<br>segundos.</h2>
   <p class="section-desc">Escolhe o método adequado para o teu sistema operativo.</p>
 
@@ -731,7 +822,7 @@ cd open-mcp</pre>
 
 <!-- QUICK START -->
 <section class="section" id="quickstart">
-  <div class="section-label">// 05 — Quick Start</div>
+  <div class="section-label">// 06 — Quick Start</div>
   <h2>Em produção<br>em minutos.</h2>
   <p class="section-desc">Usa a API de teste incluída (<code>loja_api.py</code>) para experimentar o servidor MCP localmente.</p>
 
@@ -795,7 +886,7 @@ $env:MCP_SERVER_NAME = "Loja API"</pre>
 
 <!-- CONFIG -->
 <section class="section" id="config">
-  <div class="section-label">// 06 — Configuração</div>
+  <div class="section-label">// 07 — Configuração</div>
   <h2>Clientes MCP<br>suportados.</h2>
   <p class="section-desc">Exemplos de configuração para os principais clientes MCP.</p>
 
