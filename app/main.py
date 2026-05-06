@@ -196,7 +196,7 @@ def _is_port_open(host: str, port: int) -> bool:
 # --- Main ---
 
 def main():
-    parser = argparse.ArgumentParser(description="MCP Universal Server")
+    parser = argparse.ArgumentParser(description="rest2mcp Server")
     parser.add_argument("--transport", choices=["stdio", "http", "sse"], default="stdio")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8081)

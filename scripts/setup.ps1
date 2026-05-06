@@ -1,7 +1,7 @@
-# MCP Server Universal - Setup (Windows PowerShell)
+# rest2mcp - Setup (Windows PowerShell)
 
 Write-Host "=========================================" -ForegroundColor Cyan
-Write-Host "MCP Server Universal - Setup (Windows)" -ForegroundColor Cyan
+Write-Host "rest2mcp - Setup (Windows)" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 
 # Python setup

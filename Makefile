@@ -15,7 +15,7 @@ else
 endif
 
 help:
-	@echo "MCP Server Universal - Makefile Targets"
+	@echo "rest2mcp - Makefile Targets"
 	@echo "======================================="
 	@echo "install-python  : Create Python venv and install required pip packages"
 	@echo "install-node    : Install global Node.js dependency (swagger2openapi)"
@@ -39,4 +39,4 @@ clean:
 
 inspect:
 	@test -n "$(MCP_SPEC_URL)" || (echo "Error: MCP_SPEC_URL environment variable is not set" && exit 1)
-	$(PYTHON) main.py --inspect
+	$(PYTHON) app/main.py --inspect

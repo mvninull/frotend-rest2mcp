@@ -3,7 +3,7 @@
 set -e
 
 echo "========================================="
-echo "MCP Server Universal - Setup (Linux/Mac)"
+echo "rest2mcp - Setup (Linux/Mac)"
 echo "========================================="
 
 # Python setup

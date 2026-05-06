@@ -1,4 +1,4 @@
-# MCP Server Universal
+# rest2mcp
 
 **Converta QUALQUER API em um Servidor MCP — sem escrever código.**
 
@@ -14,13 +14,13 @@ Servidor MCP genérico que converte automaticamente qualquer API OpenAPI/Swagger
 
 ## 🚀 Canais de Transporte (STDIO, HTTP, SSE)
 
-O MCP Server Universal suporta três modos de transporte, cada um ideal para diferentes cenários:
+O rest2mcp suporta três modos de transporte, cada um ideal para diferentes cenários:
 
-| Transporte | Uso Principal | Ciclo de Vida | Inspector (`--inspect`) |
-|------------|---------------|---------------|------------------------|
-| **STDIO** | Produção com cliente MCP (VS Code, Claude) | Cliente spawna/killa processo | Inspector spawna processo diretamente |
-| **HTTP** | Servidor independente / Host remoto | Contínuo (até parar manualmente) | Servidor HTTP + Inspector no browser |
-| **SSE** | Server-Sent Events / Tempo real | Contínuo (até parar manualmente) | Servidor SSE + Inspector no browser |
+| Transporte | Uso Principal                              | Ciclo de Vida                    | Inspector (`--inspect`)               |
+| ---------- | ------------------------------------------ | -------------------------------- | ------------------------------------- |
+| **STDIO**  | Produção com cliente MCP (VS Code, Claude) | Cliente spawna/killa processo    | Inspector spawna processo diretamente |
+| **HTTP**   | Servidor independente / Host remoto        | Contínuo (até parar manualmente) | Servidor HTTP + Inspector no browser  |
+| **SSE**    | Server-Sent Events / Tempo real            | Contínuo (até parar manualmente) | Servidor SSE + Inspector no browser   |
 
 ### STDIO (Padrão - Mais Comum)
 
@@ -63,7 +63,9 @@ python main.py --inspect --transport sse --port 8081
 ## ⚠️ IMPORTANTE: Entenda o Fluxo
 
 ### Transporte stdio (padrão - mais comum)
+
 O servidor é **passivo** e fica subordinado ao ciclo de vida do cliente:
+
 - **O cliente MCP** (VS Code, Claude Desktop, Cursor) **spawna o servidor** como processo filho quando necessário
 - **O servidor processa a requisição** e **morre** quando o cliente desconecta
 - **Você não precisa rodar `python main.py` manualmente** em produção
@@ -81,7 +83,9 @@ O servidor é **passivo** e fica subordinado ao ciclo de vida do cliente:
 ```
 
 ### Transporte SSE/HTTP
+
 O servidor roda de forma **independente**:
+
 - O servidor pode rodar continuamente em um host remoto ou local
 - O cliente conecta via HTTP/SSE sem controlar o ciclo de vida
 - Você precisa iniciar o servidor manualmente antes do cliente conectar
@@ -108,7 +112,7 @@ O servidor roda de forma **independente**:
 
 ## Visão Geral
 
-O MCP Server Universal é uma solução que permite expor qualquer API REST (documentada com OpenAPI/Swagger) como um servidor MCP. Isso significa que qualquer LLM compatível com MCP pode:
+O rest2mcp é uma solução que permite expor qualquer API REST (documentada com OpenAPI/Swagger) como um servidor MCP. Isso significa que qualquer LLM compatível com MCP pode:
 
 - Listar as tools/endpoints disponíveis
 - Chamar endpoints da API como tools MCP
@@ -185,16 +189,16 @@ O servidor será ativado automaticamente pelo cliente MCP quando necessário.
 
 ## Configurando Múltiplas APIs
 
-Uma das maiores vantagens do MCP Server Universal é poder configurar **várias APIs diferentes** no mesmo cliente MCP. Cada API é um servidor independente que aponta para uma especificação diferente.
+Uma das maiores vantagens do rest2mcp é poder configurar **várias APIs diferentes** no mesmo cliente MCP. Cada API é um servidor independente que aponta para uma especificação diferente.
 
 ### Exemplo: PetStore API (Externa) vs Loja API (Local)
 
-| | PetStore API | Loja API (Local) |
-|---|---|---|
-| **Origem** | Externa (swagger.io) | Local (localhost:8000) |
-| **Versão Spec** | Swagger 2.0 (desatualizado) | OpenAPI 3.0 (atualizado) |
-| **Conversão** | Automática via swagger2openapi | Nativa (sem conversão) |
-| **Velocidade** | Mais lenta (precisa converter) | Rápida (usa diretamente) |
+|                 | PetStore API                   | Loja API (Local)         |
+| --------------- | ------------------------------ | ------------------------ |
+| **Origem**      | Externa (swagger.io)           | Local (localhost:8000)   |
+| **Versão Spec** | Swagger 2.0 (desatualizado)    | OpenAPI 3.0 (atualizado) |
+| **Conversão**   | Automática via swagger2openapi | Nativa (sem conversão)   |
+| **Velocidade**  | Mais lenta (precisa converter) | Rápida (usa diretamente) |
 
 ### Configuração no VS Code (Múltiplas APIs)
 
@@ -355,12 +359,12 @@ python main.py --inspect --transport sse --port 8081
 
 ### Comparação: Produção vs Desenvolvimento
 
-|                | Produção STDIO       | Produção HTTP/SSE        | Desenvolvimento (Inspector)      |
-| -------------- | -------------------- | ------------------------ | --------------------------------- |
-| **Quem ativa** | Cliente MCP (auto)   | Você (manual)            | Você (manual)                     |
+|                | Produção STDIO       | Produção HTTP/SSE                        | Desenvolvimento (Inspector)                               |
+| -------------- | -------------------- | ---------------------------------------- | --------------------------------------------------------- |
+| **Quem ativa** | Cliente MCP (auto)   | Você (manual)                            | Você (manual)                                             |
 | **Comando**    | Nenhum (cliente faz) | `python main.py --transport [http\|sse]` | `python main.py --inspect --transport [stdio\|http\|sse]` |
-| **Propósito**  | LLM usar a API       | LLM usar a API          | Você ver/debugar as tools         |
-| **Duração**    | Vivo durante uso     | Contínuo até parar      | Vivo até fechar o Inspector       |
+| **Propósito**  | LLM usar a API       | LLM usar a API                           | Você ver/debugar as tools                                 |
+| **Duração**    | Vivo durante uso     | Contínuo até parar                       | Vivo até fechar o Inspector                               |
 
 ---
 
@@ -371,16 +375,19 @@ python main.py --inspect --transport sse --port 8081
 Edite o arquivo `settings.json`:
 
 **Windows:**
+
 ```
 %APPDATA%\Code\User\settings.json
 ```
 
 **Mac:**
+
 ```
 ~/Library/Application Support/Code/User/settings.json
 ```
 
 **Linux:**
+
 ```
 ~/.config/Code/User/settings.json
 ```
@@ -426,6 +433,7 @@ Edite o arquivo `settings.json`:
 Para usar HTTP ou SSE, inicie o servidor manualmente e configure o cliente para conectar:
 
 **Terminal: Iniciar servidor HTTP**
+
 ```bash
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
@@ -433,6 +441,7 @@ python main.py --transport http --port 8081
 ```
 
 **VS Code settings.json (HTTP)**
+
 ```json
 {
   "mcp.servers": {
@@ -444,6 +453,7 @@ python main.py --transport http --port 8081
 ```
 
 **VS Code settings.json (SSE)**
+
 ```json
 {
   "mcp.servers": {
@@ -461,11 +471,13 @@ python main.py --transport http --port 8081
 Edite o arquivo de configuração:
 
 **Windows:**
+
 ```
 %APPDATA%\Claude\claude_desktop_config.json
 ```
 
 **Mac:**
+
 ```
 ~/Library/Application Support/Claude/claude_desktop_config.json
 ```
@@ -484,6 +496,7 @@ Edite o arquivo de configuração:
   }
 }
 ```
+
 ### Claude Desktop
 
 Edite o arquivo de configuração:
@@ -522,6 +535,7 @@ Edite o arquivo de configuração:
 Para HTTP/SSE, inicie o servidor manualmente:
 
 **Terminal: Iniciar servidor HTTP**
+
 ```bash
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
@@ -529,6 +543,7 @@ python main.py --transport http --port 8081
 ```
 
 **Claude config (HTTP)**
+
 ```json
 {
   "mcpServers": {
@@ -540,6 +555,7 @@ python main.py --transport http --port 8081
 ```
 
 **Claude config (SSE)**
+
 ```json
 {
   "mcpServers": {
@@ -768,19 +784,20 @@ Uma API FastAPI de demonstração que simula uma loja virtual, ideal para testar
 
 ### Recursos da API
 
-| Endpoint | Método | Descrição |
-|----------|--------|-----------|
-| `/` | GET | Página inicial |
-| `/api/v1/produtos` | GET | Listar produtos (com filtros opcionais) |
-| `/api/v1/produtos/{id}` | GET | Buscar produto por ID |
-| `/api/v1/produtos` | POST | Criar novo produto |
-| `/api/v1/produtos/{id}` | PUT | Atualizar produto |
-| `/api/v1/produtos/{id}` | DELETE | Deletar produto |
-| `/api/v1/categorias` | GET | Listar categorias |
+| Endpoint                | Método | Descrição                               |
+| ----------------------- | ------ | --------------------------------------- |
+| `/`                     | GET    | Página inicial                          |
+| `/api/v1/produtos`      | GET    | Listar produtos (com filtros opcionais) |
+| `/api/v1/produtos/{id}` | GET    | Buscar produto por ID                   |
+| `/api/v1/produtos`      | POST   | Criar novo produto                      |
+| `/api/v1/produtos/{id}` | PUT    | Atualizar produto                       |
+| `/api/v1/produtos/{id}` | DELETE | Deletar produto                         |
+| `/api/v1/categorias`    | GET    | Listar categorias                       |
 
 ### Especificação OpenAPI
 
 A API expõe automaticamente sua especificação OpenAPI 3.0 em:
+
 - **JSON**: `http://localhost:8000/openapi.json`
 - **Swagger UI**: `http://localhost:8000/docs`
 - **ReDoc**: `http://localhost:8000/redoc`
