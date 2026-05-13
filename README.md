@@ -319,10 +319,10 @@ O servidor roda continuamente, você inicia manualmente:
 # Terminal: iniciar servidor (HTTP)
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
-python main.py --transport http --port 8081
+python app/main.py --transport http --port 8081
 
 # Ou para SSE:
-python main.py --transport sse --port 8081
+python app/main.py --transport sse --port 8081
 ```
 
 O cliente MCP conecta no servidor via HTTP/SSE em `http://localhost:8081`.
@@ -336,7 +336,7 @@ O cliente MCP conecta no servidor via HTTP/SSE em `http://localhost:8081`.
 ```powershell
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
-python main.py --inspect --transport stdio
+python app/main.py --inspect --transport stdio
 ```
 
 #### HTTP + Inspector
@@ -344,7 +344,7 @@ python main.py --inspect --transport stdio
 ```powershell
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
-python main.py --inspect --transport http --port 8081
+python app/main.py --inspect --transport http --port 8081
 ```
 
 #### SSE + Inspector
@@ -352,7 +352,7 @@ python main.py --inspect --transport http --port 8081
 ```powershell
 $env:MCP_SPEC_URL = "https://petstore.swagger.io/v2/swagger.json"
 $env:MCP_SERVER_NAME = "PetStore API"
-python main.py --inspect --transport sse --port 8081
+python app/main.py --inspect --transport sse --port 8081
 ```
 
 > O Inspector abrirá em `http://localhost:6274` em todos os casos.
@@ -750,6 +750,43 @@ npm install -g swagger2openapi
 ```
 
 Ou deixe o `npx` instalar automaticamente (mais lento na primeira vez).
+
+---
+
+## Gestão de Sessão e Autenticação
+
+APIs protegidas por autenticação são suportadas de forma transparente. O servidor detecta automaticamente endpoints de login na especificação e gerencia o token de sessão por si.
+
+### Funcionalidades
+
+- **Login Inteligente**: O endpoint de autenticação é identificado automaticamente na spec — não precisa de configuração manual
+- **Sessão Global**: Após o login, o token é armazenado e injetado em todas as chamadas seguintes sem intervenção
+- **Estado da Sessão**: Pode verificar a qualquer momento se está autenticado e qual o endpoint ativo
+
+### Fluxo de Autenticação
+
+```
+LLM ──→ login(usr, pwd) ──→ API retorna token ──→ token armazenado na sessão
+                                                         │
+LLM ──→ listar_produtos() ──────────────────────────────┘
+                           ← token injetado automaticamente
+                           ← API responde com dados protegidos
+```
+
+### Como Usar
+
+1. **Configure o servidor** com a URL da API protegida (`MCP_SPEC_URL`)
+2. O LLM chamará a ferramenta de login com as credenciais adequadas
+3. Todas as ferramentas seguintes usarão o token automaticamente
+
+```bash
+# Exemplo com uma API que requer autenticação
+$env:MCP_SPEC_URL = "http://localhost:8000/openapi.json"
+$env:MCP_SERVER_NAME = "Loja API"
+python app/main.py --inspect
+```
+
+> Nota: O token é gerido apenas em memória durante a sessão. Cada nova sessão requer um novo login.
 
 ---
 
