@@ -1,5 +1,9 @@
 # rest2mcp
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/F1F81ZH0QM)
+
+
+
 **Converta QUALQUER API em um Servidor MCP — sem escrever código.**
 
 Servidor MCP genérico que converte automaticamente qualquer API OpenAPI/Swagger em um servidor MCP, permitindo que LLMs interajam com sua API através do protocolo Model Context Protocol (MCP).
