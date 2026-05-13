@@ -122,9 +122,47 @@ O rest2mcp é uma solução que permite expor qualquer API REST (documentada com
 
 - **Suporte universal**: Aceita OpenAPI 3.0+ nativamente
 - **Conversão automática**: Converte Swagger 2.0 para OpenAPI 3.0 automaticamente
+- **Gestão de Sessão**: Login e token de autenticação geridos automaticamente — o LLM faz login uma vez, e todas as chamadas seguintes herdam a sessão
 - **Modo desenvolvimento**: Inspector integrado para testes
 - **Logging colorido**: Logs informativos no terminal
 - **Zero configuração no código**: Toda configuração via variáveis de ambiente
+
+---
+
+## Gestão de Sessão e Autenticação
+
+APIs protegidas por autenticação são suportadas de forma transparente. O servidor detecta automaticamente endpoints de login na especificação e gerencia o token de sessão por si.
+
+### Funcionalidades
+
+- **Login Inteligente**: O endpoint de autenticação é identificado automaticamente na spec — não precisa de configuração manual
+- **Sessão Global**: Após o login, o token é armazenado e injetado em todas as chamadas seguintes sem intervenção
+- **Estado da Sessão**: Pode verificar a qualquer momento se está autenticado e qual o endpoint ativo
+
+### Fluxo de Autenticação
+
+```
+LLM ──→ login(usr, pwd) ──→ API retorna token ──→ token armazenado na sessão
+                                                         │
+LLM ──→ listar_produtos() ──────────────────────────────┘
+                           ← token injetado automaticamente
+                           ← API responde com dados protegidos
+```
+
+### Como Usar
+
+1. **Configure o servidor** com a URL da API protegida (`MCP_SPEC_URL`)
+2. O LLM chamará a ferramenta de login com as credenciais adequadas
+3. Todas as ferramentas seguintes usarão o token automaticamente
+
+```bash
+# Exemplo com uma API que requer autenticação
+$env:MCP_SPEC_URL = "http://localhost:8000/openapi.json"
+$env:MCP_SERVER_NAME = "Loja API"
+python app/main.py --inspect
+```
+
+> Nota: O token é gerido apenas em memória durante a sessão. Cada nova sessão requer um novo login.
 
 ---
 
@@ -191,16 +229,9 @@ O servidor será ativado automaticamente pelo cliente MCP quando necessário.
 
 Uma das maiores vantagens do rest2mcp é poder configurar **várias APIs diferentes** no mesmo cliente MCP. Cada API é um servidor independente que aponta para uma especificação diferente.
 
-### Exemplo: PetStore API (Externa) vs Loja API (Local)
+### Exemplo: PetStore API (Externa) / Loja API (Local)
 
-|                 | PetStore API                   | Loja API (Local)         |
-| --------------- | ------------------------------ | ------------------------ |
-| **Origem**      | Externa (swagger.io)           | Local (localhost:8000)   |
-| **Versão Spec** | Swagger 2.0 (desatualizado)    | OpenAPI 3.0 (atualizado) |
-| **Conversão**   | Automática via swagger2openapi | Nativa (sem conversão)   |
-| **Velocidade**  | Mais lenta (precisa converter) | Rápida (usa diretamente) |
-
-### Configuração no VS Code (Múltiplas APIs)
+##### Configuração no VS Code (Múltiplas APIs)
 
 ```json
 {
@@ -750,43 +781,6 @@ npm install -g swagger2openapi
 ```
 
 Ou deixe o `npx` instalar automaticamente (mais lento na primeira vez).
-
----
-
-## Gestão de Sessão e Autenticação
-
-APIs protegidas por autenticação são suportadas de forma transparente. O servidor detecta automaticamente endpoints de login na especificação e gerencia o token de sessão por si.
-
-### Funcionalidades
-
-- **Login Inteligente**: O endpoint de autenticação é identificado automaticamente na spec — não precisa de configuração manual
-- **Sessão Global**: Após o login, o token é armazenado e injetado em todas as chamadas seguintes sem intervenção
-- **Estado da Sessão**: Pode verificar a qualquer momento se está autenticado e qual o endpoint ativo
-
-### Fluxo de Autenticação
-
-```
-LLM ──→ login(usr, pwd) ──→ API retorna token ──→ token armazenado na sessão
-                                                         │
-LLM ──→ listar_produtos() ──────────────────────────────┘
-                           ← token injetado automaticamente
-                           ← API responde com dados protegidos
-```
-
-### Como Usar
-
-1. **Configure o servidor** com a URL da API protegida (`MCP_SPEC_URL`)
-2. O LLM chamará a ferramenta de login com as credenciais adequadas
-3. Todas as ferramentas seguintes usarão o token automaticamente
-
-```bash
-# Exemplo com uma API que requer autenticação
-$env:MCP_SPEC_URL = "http://localhost:8000/openapi.json"
-$env:MCP_SERVER_NAME = "Loja API"
-python app/main.py --inspect
-```
-
-> Nota: O token é gerido apenas em memória durante a sessão. Cada nova sessão requer um novo login.
 
 ---
 
