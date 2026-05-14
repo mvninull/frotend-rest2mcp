@@ -1,14 +1,40 @@
 import os
 import sys
 import subprocess
+import time
 import httpx
 import json
-from urllib.parse import urlparse # Nativo, não precisa de pip
+from urllib.parse import urlparse
 from fastmcp import FastMCP
-from utils import logger
+
+try:
+    from .utils import logger
+except ImportError:
+    from utils import logger
+
+
+class LoggedTransport(httpx.AsyncBaseTransport):
+    def __init__(self, inner: httpx.AsyncBaseTransport, log_func=None, server_id=""):
+        self.inner = inner
+        self.log_func = log_func
+        self.server_id = server_id
+
+    async def handle_async_request(self, request):
+        start = time.time()
+        try:
+            response = await self.inner.handle_async_request(request)
+            duration = (time.time() - start) * 1000
+            if self.log_func:
+                self.log_func(self.server_id, str(request.url), response.status_code, duration)
+            return response
+        except Exception:
+            duration = (time.time() - start) * 1000
+            if self.log_func:
+                self.log_func(self.server_id, str(request.url), 0, duration)
+            raise
+
 
 class DynamicAuth(httpx.Auth):
-    """Porteiro dinâmico que injeta o token em cada requisição."""
     def __init__(self, manager):
         self.manager = manager
 
@@ -17,16 +43,24 @@ class DynamicAuth(httpx.Auth):
             request.headers["Authorization"] = f"Bearer {self.manager.token}"
         yield request
 
+
 class MCPServerManager:
-    def __init__(self, spec_url: str, name: str):
+    def __init__(self, spec_url: str, name: str, spec: dict | None = None, server_id: str = "", log_func=None):
         self.spec_url = spec_url
         self.name = name
+        self.server_id = server_id
+        self.log_func = log_func
         self.token = None
 
-        # 1. Carrega a especificação
-        self.spec = self.load_and_convert_spec(spec_url)
+        if spec is not None:
+            self.spec = spec
+        else:
+            self.spec = self.load_and_convert_spec(spec_url)
 
-        # 2. Define a URL Base
+        if self.spec.get("swagger") == "2.0":
+            logger.info("Convertendo Swagger 2.0 to OpenAPI 3.0")
+            self.spec = self._swagger2_to_openapi3(self.spec)
+
         parsed = urlparse(spec_url)
         self.base_url = f"{parsed.scheme}://{parsed.netloc}"
 
@@ -36,25 +70,25 @@ class MCPServerManager:
                 self.base_url = f"{self.base_url}{server_url.rstrip('/')}"
             else:
                 self.base_url = server_url.rstrip("/")
-        
+
         logger.info(f"Base URL configurada: {self.base_url}")
 
-        # 3. Cria o cliente com o Auth Dinâmico
+        inner = httpx.AsyncHTTPTransport()
+        transport = LoggedTransport(inner, log_func=log_func, server_id=server_id)
         self.client = httpx.AsyncClient(
-            base_url=self.base_url, 
-            auth=DynamicAuth(self), 
+            base_url=self.base_url,
+            auth=DynamicAuth(self),
             timeout=30.0,
-            follow_redirects=True
+            follow_redirects=True,
+            transport=transport,
         )
 
-        # 4. Cria o MCP a partir do OpenAPI
         self.mcp = FastMCP.from_openapi(
-            openapi_spec=self.spec, 
-            name=self.name, 
-            client=self.client
+            openapi_spec=self.spec,
+            name=self.name,
+            client=self.client,
         )
 
-        # 5. Configura o login dinâmico
         self._setup_dynamic_login()
 
     def load_and_convert_spec(self, url: str) -> dict:
@@ -62,7 +96,7 @@ class MCPServerManager:
         response = httpx.get(url, timeout=30.0)
         response.raise_for_status()
         spec = response.json()
-        
+
         # Converte se for Swagger 2.0
         if spec.get("swagger") == "2.0":
             logger.info("Convertendo Swagger 2.0 → OpenAPI 3.0")
@@ -77,13 +111,16 @@ class MCPServerManager:
             shell_val = sys.platform == "win32"
             subprocess.run(
                 ["npx", "swagger2openapi", temp_input, "-o", temp_output],
-                check=True, shell=shell_val, capture_output=True,
+                check=True,
+                shell=shell_val,
+                capture_output=True,
             )
             with open(temp_output, "r", encoding="utf-8") as f:
                 return json.load(f)
         finally:
             for f in [temp_input, temp_output]:
-                if os.path.exists(f): os.remove(f)
+                if os.path.exists(f):
+                    os.remove(f)
 
     def _setup_dynamic_login(self):
         login_path = None
@@ -94,12 +131,13 @@ class MCPServerManager:
                     break
 
         if login_path:
+
             @self.mcp.tool(name="login")
             async def smart_login(username: str, password: str) -> str:
                 """Faz login na API e configura o token automaticamente."""
                 payload = {"username": username, "password": password}
                 url_to_call = login_path if login_path.startswith("/") else f"/{login_path}"
-                
+
                 async with httpx.AsyncClient(base_url=self.base_url) as auth_client:
                     resp = await auth_client.post(url_to_call, json=payload)
                     if resp.status_code == 422:
@@ -118,6 +156,7 @@ class MCPServerManager:
         async def session_status() -> str:
             """Verifica o estado atual da autenticação."""
             return f"Autenticado: {bool(self.token)} | API: {self.base_url}"
+
 
 # ESTA FUNÇÃO PRECISA ESTAR FORA DA CLASSE (NA RAIZ DO ARQUIVO)
 def create_mcp_server(spec_url: str, name: str) -> FastMCP:

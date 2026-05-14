@@ -329,8 +329,8 @@ async function bootstrap() {
 
   await app.ready();
   console.log('Iniciando Loja API...');
-  console.log('Swagger UI: http://localhost:8000/docs');
-  await app.listen({ port: 8000, host: '0.0.0.0' });
+  console.log('Swagger UI: http://localhost:8089/docs');
+  await app.listen({ port: 8089, host: '0.0.0.0' });
 }
 
 bootstrap();
