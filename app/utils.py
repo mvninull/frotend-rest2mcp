@@ -98,22 +98,36 @@ def run_with_inspector(transport: str, spec_url: str, name: str, host: str, port
 
     from server import run_server_http, run_server_sse
 
+    exc_info = []
+
     def start_server():
-        if transport == "http":
-            run_server_http(spec_url, name, host, port)
-        elif transport == "sse":
-            run_server_sse(spec_url, name, host, port)
+        try:
+            if transport == "http":
+                run_server_http(spec_url, name, host, port)
+            elif transport == "sse":
+                run_server_sse(spec_url, name, host, port)
+        except Exception as e:
+            exc_info.append(e)
 
     server_thread = threading.Thread(target=start_server, daemon=True)
     server_thread.start()
 
     # Aguarda servidor subir
     logger.info("Aguardando servidor iniciar...")
-    time.sleep(3)
-
-    # Verifica se porta está aberta
-    if not _is_port_open(host, port):
-        logger.error(f"Servidor não responde em {host}:{port}")
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        if exc_info:
+            logger.error(f"Erro ao iniciar servidor: {exc_info[0]}")
+            return 1
+        if _is_port_open(host, port):
+            logger.info("Servidor pronto!")
+            break
+        time.sleep(0.5)
+    else:
+        if exc_info:
+            logger.error(f"Erro ao iniciar servidor: {exc_info[0]}")
+        else:
+            logger.error(f"Servidor não responde em {host}:{port} — verifique se o backend (porta 8000) está rodando")
         return 1
 
     # Lança Inspector
