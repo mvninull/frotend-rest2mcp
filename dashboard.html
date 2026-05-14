@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - rest2mcp Cloud</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0a0a0f;
+        --paper: #f5f4ef;
+        --accent: #1a56ff;
+        --accent2: #00d4aa;
+        --warn: #ff6b35;
+        --muted: #6b6b7a;
+        --border: rgba(10, 10, 15, 0.1);
+        --card-bg: #ffffff;
+        --mono: "JetBrains Mono", monospace;
+        --display: "Syne", sans-serif;
+        --body: "DM Sans", sans-serif;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--body);
+        font-size: 16px;
+        line-height: 1.65;
+      }
+
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(245, 244, 239, 0.85);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border);
+        padding: 0 2rem;
+      }
+      .nav-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+      }
+      .logo {
+        font-family: var(--display);
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: var(--ink);
+        letter-spacing: -0.03em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+      }
+      .logo-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: inline-block;
+      }
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: white;
+      }
+      .user-name {
+        font-family: var(--display);
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .logout-btn {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--muted);
+        text-decoration: none;
+        transition: color 0.2s;
+      }
+      .logout-btn:hover { color: var(--warn); }
+
+      .dash-layout {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 3rem 2rem;
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 2rem;
+      }
+
+      .dash-main h2 {
+        font-family: var(--display);
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.5rem;
+      }
+      .dash-main .sub {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 2rem;
+      }
+
+      .server-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .server-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s;
+      }
+      .server-card:hover {
+        border-color: rgba(10,10,15,0.2);
+        box-shadow: 0 2px 12px rgba(10,10,15,0.04);
+      }
+      .server-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .status-dot.active { background: var(--accent2); box-shadow: 0 0 6px rgba(0,212,170,0.4); }
+      .status-dot.inactive { background: var(--warn); }
+      .server-name {
+        font-family: var(--display);
+        font-weight: 700;
+        font-size: 0.95rem;
+      }
+      .server-url {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-top: 2px;
+        word-break: break-all;
+      }
+      .server-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .status-label {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        font-weight: 500;
+      }
+      .status-label.active { color: var(--accent2); }
+      .status-label.inactive { color: var(--warn); }
+      .btn-copy {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-copy:hover { opacity: 0.85; }
+      .btn-copy:disabled {
+        background: rgba(10,10,15,0.06);
+        color: var(--muted);
+        cursor: not-allowed;
+      }
+      .btn-copy.copied {
+        background: var(--accent2);
+        color: var(--ink);
+      }
+      .btn-toggle {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-family: var(--mono);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-toggle:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .btn-delete {
+        background: none;
+        border: none;
+        color: var(--warn);
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        text-align: left;
+      }
+      .btn-delete:hover { background: rgba(255,107,53,0.1); }
+
+      .menu-btn {
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-size: 1.3rem;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        line-height: 1;
+        transition: all 0.2s;
+      }
+      .menu-btn:hover { background: rgba(10,10,15,0.06); color: var(--ink); }
+
+      .menu-wrapper {
+        position: relative;
+      }
+      .menu-dropdown {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(10,10,15,0.12);
+        min-width: 180px;
+        z-index: 50;
+        padding: 6px;
+        margin-top: 4px;
+      }
+      .menu-dropdown.open { display: block; }
+      .menu-dropdown button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        background: none;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: var(--body);
+        font-size: 0.85rem;
+        cursor: pointer;
+        color: var(--ink);
+        transition: background 0.15s;
+        text-align: left;
+      }
+      .menu-dropdown button:hover { background: rgba(10,10,15,0.04); }
+      .menu-dropdown .menu-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 4px 8px;
+      }
+      .menu-dropdown .menu-danger { color: var(--warn); }
+      .menu-dropdown .menu-danger:hover { background: rgba(255,107,53,0.1); }
+
+      .create-server-bar {
+        background: white;
+        border: 1px dashed var(--border);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 10px;
+      }
+      .create-server-bar:hover {
+        border-color: var(--accent);
+        background: rgba(26,86,255,0.02);
+      }
+      .create-server-bar span {
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--accent);
+      }
+      .create-server-bar .plus {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      /* Create Server Modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(10,10,15,0.5);
+        backdrop-filter: blur(4px);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.open { display: flex; }
+      .modal-box {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        width: 90%;
+        max-width: 460px;
+        box-shadow: 0 20px 60px rgba(10,10,15,0.2);
+      }
+      .modal-box h3 {
+        font-family: var(--display);
+        font-size: 1.2rem;
+        font-weight: 800;
+        margin-bottom: 0.3rem;
+      }
+      .modal-box .modal-sub {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-bottom: 1.5rem;
+      }
+      .modal-box label {
+        display: block;
+        font-family: var(--display);
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+        margin-top: 1rem;
+      }
+      .modal-box input {
+        width: 100%;
+        padding: 0.7rem 0.9rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-family: var(--body);
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .modal-box input:focus {
+        border-color: var(--accent);
+      }
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+      }
+      .modal-actions button {
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        font-family: var(--display);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-cancel {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
+      }
+      .btn-cancel:hover { border-color: var(--ink); color: var(--ink); }
+      .btn-confirm {
+        background: var(--accent);
+        border: none;
+        color: white;
+      }
+      .btn-confirm:hover { opacity: 0.85; }
+      .btn-confirm:disabled {
+        background: rgba(10,10,15,0.06);
+        color: var(--muted);
+        cursor: not-allowed;
+      }
+      .modal-error {
+        color: var(--warn);
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        margin-top: 0.8rem;
+      }
+
+      /* Loading & Empty */
+      .loading-dots::after {
+        content: '';
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+      @keyframes dots {
+        0% { content: ''; }
+        25% { content: '.'; }
+        50% { content: '..'; }
+        75% { content: '...'; }
+      }
+      .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .empty-state .empty-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .dash-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .sidebar-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+      }
+      .sidebar-card h3 {
+        font-family: var(--display);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1rem;
+      }
+
+      .plan-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        background: rgba(0,212,170,0.1);
+        color: var(--accent2);
+        padding: 4px 10px;
+        border-radius: 100px;
+        margin-bottom: 1rem;
+      }
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+      }
+      .stat-row:last-child { border: none; }
+      .stat-label { color: var(--muted); }
+      .stat-value { font-weight: 600; }
+
+      .sidebar-logs {
+        background: var(--ink);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .sidebar-logs-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      .sidebar-logs-header .pulse-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--accent2);
+        animation: pulse 2s infinite;
+      }
+      .sidebar-logs-header .log-title {
+        font-family: var(--mono);
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.4);
+      }
+      .sidebar-logs-body {
+        padding: 0.75rem 1rem;
+        font-family: var(--mono);
+        font-size: 0.65rem;
+        line-height: 1.8;
+        color: #a0aec0;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+      .sidebar-logs-body .hl { color: var(--accent2); }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.3); }
+      }
+
+      @media (max-width: 768px) {
+        .dash-layout {
+          grid-template-columns: 1fr;
+        }
+        .server-card {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
+        .server-actions {
+          width: 100%;
+          justify-content: flex-end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="nav-inner">
+        <a href="index.html" class="logo"><span class="logo-dot"></span>rest2mcp</a>
+        <div class="user-info">
+          <div class="user-avatar">M</div>
+          <span class="user-name">Matias</span>
+          <a href="index.html" class="logout-btn">Sair</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="dash-layout">
+      <div class="dash-main">
+        <h2>Meus Servidores</h2>
+        <p class="sub">Gerencie suas pontes MCP na nuvem</p>
+
+        <div class="server-list" id="serverList">
+          <div class="empty-state" id="loadingState">
+            <div class="empty-icon">⏳</div>
+            <div>Carregando servidores<span class="loading-dots"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-sidebar">
+        <div class="sidebar-card">
+          <h3>Plano Atual</h3>
+          <div class="plan-badge">✦ Hobby — Grátis</div>
+          <div class="stat-row">
+            <span class="stat-label">Servidores</span>
+            <span class="stat-value" id="serverCount">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Logs</span>
+            <span class="stat-value">Últimas 24h</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Gateway</span>
+            <span class="stat-value" id="gatewayStatus">---</span>
+          </div>
+        </div>
+
+        <div class="sidebar-logs">
+          <div class="sidebar-logs-header">
+            <span class="pulse-dot"></span>
+            <span class="log-title">Live Logs</span>
+          </div>
+          <div class="sidebar-logs-body" id="liveLogs">
+            <div style="color:rgba(255,255,255,0.3)">Aguardando atividade...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Server Modal -->
+    <div class="modal-overlay" id="editModal">
+      <div class="modal-box">
+        <h3>Editar Servidor</h3>
+        <p class="modal-sub">Altere as configurações do servidor</p>
+        <label>Nome do Servidor</label>
+        <input type="text" id="editName" />
+        <label>Transporte</label>
+        <select id="editTransport" style="width:100%;padding:0.7rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:var(--body);font-size:0.9rem;outline:none;background:white;">
+          <option value="http">Streamable HTTP (recomendado)</option>
+          <option value="sse">SSE (legado)</option>
+        </select>
+        <label>Status</label>
+        <select id="editStatus" style="width:100%;padding:0.7rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:var(--body);font-size:0.9rem;outline:none;background:white;">
+          <option value="active">Online</option>
+          <option value="inactive">Offline</option>
+        </select>
+        <div class="modal-error" id="editError"></div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+          <button class="btn-confirm" id="btnEditConfirm" onclick="saveEdit()">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Server Modal -->
+    <div class="modal-overlay" id="createModal">
+      <div class="modal-box">
+        <h3>Novo Servidor</h3>
+        <p class="modal-sub">Registre uma nova API para ser convertida em MCP</p>
+        <label>Nome do Servidor</label>
+        <input type="text" id="inputName" placeholder="Ex: Minha API Principal" />
+        <label>URL do OpenAPI Spec</label>
+        <input type="url" id="inputSpecUrl" placeholder="Ex: https://api.exemplo.com/openapi.json" />
+        <label>Transporte</label>
+        <select id="inputTransport" style="width:100%;padding:0.7rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:var(--body);font-size:0.9rem;outline:none;background:white;">
+          <option value="http">Streamable HTTP (recomendado)</option>
+          <option value="sse">SSE (legado)</option>
+        </select>
+        <div class="modal-error" id="modalError"></div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeCreateModal()">Cancelar</button>
+          <button class="btn-confirm" id="btnCreateConfirm" onclick="createServer()">Criar Servidor</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ─── Configuration ─────────────────────────────────────────────────
+      const API_BASE = (localStorage.getItem('api_base') || 'http://localhost:8080').replace(/\/+$/, '');
+      const POLL_LOGS_INTERVAL = 5000;
+      let activeServerId = null;
+
+      // ─── API Client ────────────────────────────────────────────────────
+      async function apiFetch(path, options = {}) {
+        const url = `${API_BASE}${path}`;
+        const res = await fetch(url, {
+          headers: { 'Content-Type': 'application/json', ...options.headers },
+          ...options,
+        });
+        if (res.status === 204) return null;
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || `Erro ${res.status}`);
+        return data;
+      }
+
+      // ─── Render Server Card ────────────────────────────────────────────
+      function renderServerCard(s) {
+        const isActive = s.status === 'active';
+        const card = document.createElement('div');
+        card.className = 'server-card';
+        card.dataset.serverId = s.server_id;
+        card.dataset.apikey = s.apikey || '';
+        card.innerHTML = `
+          <div class="server-info">
+            <span class="status-dot ${isActive ? 'active' : 'inactive'}"></span>
+            <div>
+              <div class="server-name">${escapeHtml(s.name)}</div>
+              <div class="server-url">${escapeHtml(s.url_sse || s.server_id)}</div>
+            </div>
+          </div>
+          <div class="server-actions">
+            <button class="btn-copy" ${isActive ? '' : 'disabled'} onclick="copyUrl(this, '${escapeHtml(s.url_sse || '')}')">
+              Copy URL
+            </button>
+            <div class="menu-wrapper">
+              <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
+              <div class="menu-dropdown">
+                <button onclick="openInspector('${escapeHtml(s.url_sse || '')}'); closeMenu(this);">
+                  🔍 Inspect
+                </button>
+                <button onclick="editServer('${s.server_id}', '${escapeHtml(s.name || '')}', '${escapeHtml(s.url_sse || '')}'); closeMenu(this);">
+                  ✏️ Editar
+                </button>
+                <div class="menu-divider"></div>
+                <button onclick="toggleServerStatus('${s.server_id}'); closeMenu(this);">
+                  ${isActive ? '⏸️ Desativar' : '▶️ Ativar'}
+                </button>
+                <div class="menu-divider"></div>
+                <button class="menu-danger" onclick="deleteServer('${s.server_id}', this.closest('.server-card')); closeMenu(this);">
+                  🗑️ Remover
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        return card;
+      }
+
+      // ─── Load Servers ──────────────────────────────────────────────────
+      async function loadServers() {
+        const list = document.getElementById('serverList');
+        try {
+          const servers = await apiFetch('/v1/servers');
+          list.innerHTML = '';
+
+          if (!servers || servers.length === 0) {
+            list.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-icon">🔌</div>
+                <div>Nenhum servidor ainda.<br/>Clique em <strong>+ Adicionar novo servidor</strong> para começar.</div>
+              </div>
+            `;
+          } else {
+            servers.forEach(s => {
+              const card = renderServerCard(s);
+              list.appendChild(card);
+            });
+            activeServerId = servers[0].server_id;
+          }
+
+          document.getElementById('serverCount').textContent = servers ? servers.length : 0;
+
+          const createBar = document.createElement('div');
+          createBar.className = 'create-server-bar';
+          createBar.innerHTML = '<div class="plus">+</div><span>Adicionar novo servidor</span>';
+          createBar.onclick = () => openCreateModal();
+          list.appendChild(createBar);
+
+        } catch (err) {
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">⚠️</div>
+              <div style="color:var(--warn)">Erro ao carregar servidores:<br/>${escapeHtml(err.message)}</div>
+              <button onclick="loadServers()" style="margin-top:1rem;padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-family:var(--mono);font-size:0.8rem;">
+                Tentar novamente
+              </button>
+            </div>
+          `;
+          document.getElementById('serverCount').textContent = '—';
+        }
+      }
+
+      // ─── Create Server ─────────────────────────────────────────────────
+      async function createServer() {
+        const name = document.getElementById('inputName').value.trim();
+        const specUrl = document.getElementById('inputSpecUrl').value.trim();
+        const transport = document.getElementById('inputTransport').value;
+        const errorEl = document.getElementById('modalError');
+        const btn = document.getElementById('btnCreateConfirm');
+
+        errorEl.textContent = '';
+
+        if (!name) { errorEl.textContent = 'Informe o nome do servidor.'; return; }
+        if (!specUrl) { errorEl.textContent = 'Informe a URL do OpenAPI Spec.'; return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Criando...';
+
+        try {
+          const data = await apiFetch('/v1/servers', {
+            method: 'POST',
+            body: JSON.stringify({ name, spec_url: specUrl, transport }),
+          });
+
+          closeCreateModal();
+          await loadServers();
+
+          const list = document.getElementById('serverList');
+          const cards = list.querySelectorAll('.server-card');
+          if (cards.length > 0) {
+            cards[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+
+        } catch (err) {
+          errorEl.textContent = err.message;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Criar Servidor';
+        }
+      }
+
+      // ─── Delete Server ─────────────────────────────────────────────────
+      async function deleteServer(serverId, btn) {
+        if (!confirm('Remover este servidor permanentemente?')) return;
+
+        const card = btn.closest('.server-card');
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(20px)';
+        card.style.transition = 'all 0.3s';
+
+        try {
+          await apiFetch(`/v1/servers/${serverId}`, { method: 'DELETE' });
+          setTimeout(() => {
+            card.remove();
+            document.getElementById('serverCount').textContent =
+              document.querySelectorAll('.server-card').length;
+            if (activeServerId === serverId) activeServerId = null;
+          }, 300);
+        } catch (err) {
+          card.style.opacity = '1';
+          card.style.transform = '';
+          alert('Erro ao remover: ' + err.message);
+        }
+      }
+
+      // ─── Toggle Server Status ──────────────────────────────────────────
+      async function toggleServerStatus(serverId) {
+        const cards = document.querySelectorAll('.server-card');
+        let card = null;
+        cards.forEach(c => { if (c.dataset.serverId === serverId) card = c; });
+        if (!card) return;
+
+        const currentStatus = card.querySelector('.status-label').textContent.trim();
+        const newStatus = currentStatus === 'Online' ? 'inactive' : 'active';
+
+        try {
+          await apiFetch(`/v1/servers/${serverId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: newStatus }),
+          });
+          await loadServers();
+        } catch (err) {
+          alert('Erro ao alterar status: ' + err.message);
+        }
+      }
+
+      // ─── Menu ──────────────────────────────────────────────────────────
+      function toggleMenu(btn) {
+        const menu = btn.nextElementSibling;
+        const isOpen = menu.classList.contains('open');
+        closeAllMenus();
+        if (!isOpen) menu.classList.add('open');
+      }
+
+      function closeMenu(el) {
+        const menu = el.closest('.menu-dropdown');
+        if (menu) menu.classList.remove('open');
+      }
+
+      function closeAllMenus() {
+        document.querySelectorAll('.menu-dropdown.open').forEach(m => m.classList.remove('open'));
+      }
+
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.menu-wrapper')) closeAllMenus();
+      });
+
+      // ─── Edit Server ────────────────────────────────────────────────────
+      let editingServerId = null;
+
+      function editServer(serverId, name, url) {
+        editingServerId = serverId;
+        document.getElementById('editName').value = name;
+        const transport = url.endsWith('/mcp') ? 'http' : 'sse';
+        document.getElementById('editTransport').value = transport;
+        document.getElementById('editStatus').value = 'active';
+        document.getElementById('editError').textContent = '';
+        document.getElementById('editModal').classList.add('open');
+      }
+
+      async function saveEdit() {
+        const name = document.getElementById('editName').value.trim();
+        const transport = document.getElementById('editTransport').value;
+        const status = document.getElementById('editStatus').value;
+        const errorEl = document.getElementById('editError');
+        const btn = document.getElementById('btnEditConfirm');
+
+        errorEl.textContent = '';
+        if (!name) { errorEl.textContent = 'Nome não pode ficar vazio.'; return; }
+
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
+        try {
+          const body = { name, status };
+          if (transport) body.transport = transport;
+          await apiFetch(`/v1/servers/${editingServerId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          });
+          closeEditModal();
+          await loadServers();
+        } catch (err) {
+          errorEl.textContent = err.message;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Salvar';
+        }
+      }
+
+      function closeEditModal() {
+        document.getElementById('editModal').classList.remove('open');
+        editingServerId = null;
+      }
+
+      document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) closeEditModal();
+      });
+
+      // ─── Open in Inspector ─────────────────────────────────────────────
+      function openInspector(url) {
+        if (!url) return;
+        const transport = url.endsWith('/mcp') ? 'streamable-http' : 'sse';
+        copyUrlSilently(url);
+        // Try to auto-connect via Inspector proxy API
+        fetch('http://127.0.0.1:6277/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, transportType: transport }),
+        }).catch(() => {});
+        window.open(`http://localhost:6274/?url=${encodeURIComponent(url)}&transportType=${transport}`, '_blank');
+      }
+
+      function copyUrlSilently(url) {
+        navigator.clipboard.writeText(url).catch(() => {});
+      }
+
+      // ─── Copy URL ──────────────────────────────────────────────────────
+      function copyUrl(btn, url) {
+        if (!url) return;
+        navigator.clipboard.writeText(url).then(() => {
+          btn.textContent = 'Copiado!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = 'Copy Connection URL';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      }
+
+      // ─── Modal ─────────────────────────────────────────────────────────
+      function openCreateModal() {
+        document.getElementById('createModal').classList.add('open');
+        document.getElementById('inputName').value = '';
+        document.getElementById('inputSpecUrl').value = '';
+        document.getElementById('modalError').textContent = '';
+        document.getElementById('btnCreateConfirm').disabled = false;
+        document.getElementById('btnCreateConfirm').textContent = 'Criar Servidor';
+        setTimeout(() => document.getElementById('inputName').focus(), 100);
+      }
+
+      function closeCreateModal() {
+        document.getElementById('createModal').classList.remove('open');
+      }
+
+      document.getElementById('createModal').addEventListener('click', function(e) {
+        if (e.target === this) closeCreateModal();
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { closeCreateModal(); closeEditModal(); }
+        if (e.key === 'Enter' && document.getElementById('createModal').classList.contains('open')) {
+          createServer();
+        }
+      });
+
+      // ─── Logs Polling ──────────────────────────────────────────────────
+      let logsInterval = null;
+
+      async function pollLogs() {
+        if (!activeServerId) return;
+        try {
+          const logs = await apiFetch(`/v1/servers/${activeServerId}/logs?limit=10`);
+          const container = document.getElementById('liveLogs');
+          container.innerHTML = '';
+
+          if (!logs || logs.length === 0) {
+            container.innerHTML = '<div style="color:rgba(255,255,255,0.3)">Nenhuma chamada ainda...</div>';
+            return;
+          }
+
+          logs.forEach(log => {
+            const div = document.createElement('div');
+            div.className = 'hl';
+            div.textContent = `[INFO] Tool: ${log.tool_called}`;
+            container.appendChild(div);
+
+            const div2 = document.createElement('div');
+            const statusColor = log.status_code >= 200 && log.status_code < 300 ? '' : 'style="color:#ff6b35"';
+            div2.innerHTML = `<span ${statusColor}>[${log.status_code}]</span> ${log.duration_ms.toFixed(0)}ms`;
+            container.appendChild(div2);
+          });
+
+          container.scrollTop = container.scrollHeight;
+        } catch (err) {
+          // Silently fail on polls
+        }
+      }
+
+      function startLogsPolling() {
+        if (logsInterval) clearInterval(logsInterval);
+        pollLogs();
+        logsInterval = setInterval(pollLogs, POLL_LOGS_INTERVAL);
+      }
+
+      // ─── Helper ────────────────────────────────────────────────────────
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // ─── Gateway Status ────────────────────────────────────────────────
+      async function checkGateway() {
+        try {
+          const h = await apiFetch('/health');
+          document.getElementById('gatewayStatus').textContent =
+            `ok (${h.active_servers} ativos)`;
+        } catch {
+          document.getElementById('gatewayStatus').textContent = 'offline';
+        }
+      }
+
+      // ─── Init ──────────────────────────────────────────────────────────
+      (async function init() {
+        await checkGateway();
+        await loadServers();
+        startLogsPolling();
+
+        setInterval(() => {
+          const list = document.getElementById('serverList');
+          const firstCard = list.querySelector('.server-card');
+          if (firstCard && firstCard.dataset.serverId !== activeServerId) {
+            activeServerId = firstCard.dataset.serverId;
+            pollLogs();
+          }
+        }, 3000);
+      })();
+    </script>
+  </body>
+</html>
