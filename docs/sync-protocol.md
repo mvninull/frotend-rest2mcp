@@ -1,5 +1,11 @@
 # Protocolo de Sincronização: Identidade, Pagamento e Status
 
+> ⚠️ **INSTRUÇÃO AO AGENTE**: Implementa TUDO descrito neste documento sem esperar
+> feedback ou aprovação. O utilizador estará ausente. As variáveis de ambiente reais
+> (Supabase URL, PayPal keys, etc.) serão configuradas depois — usa placeholders
+> ou variáveis de ambiente com nomes descritivos. **Não pares o desenvolvimento
+> para pedir credenciais ou confirmações. Constrói o sistema completo.**
+
 Este documento descreve a lógica de negócio para autenticar utilizadores via Supabase,
 vincular subscrições PayPal, e controlar privilégios (servidores MCP ativos/inativos)
 com base no status de pagamento.
@@ -23,11 +29,14 @@ A coluna `user_id` na tabela `servers` (SQLite) vincula cada servidor ao seu don
 
 ### 2.1. Registo / Login (Frontend)
 
-O utilizador faz login via **Google OAuth** através do Supabase Auth.
+O utilizador faz login via **Google OAuth**, **GitHub OAuth** ou **Apple OAuth**
+através do Supabase Auth. O frontend deve mostrar os 3 botões de login social.
+
 O Supabase devolve um **JWT** que o frontend armazena e envia em cada requisição.
 
-> Nota: O Supabase também permite adicionar outros providers (GitHub, email+password)
-> no futuro sem alterar o backend — basta configurar no dashboard do Supabase.
+> Implementação: No frontend, usar `supabase.auth.signInWithOAuth({ provider: 'google' })`,
+> `'github'`, `'apple'`. O Supabase trata do redirect e JWT. O backend recebe o token
+> no header `Authorization: Bearer <token>` e valida com a chave pública do Supabase.
 
 ### 2.2. Criação automática de `profiles`
 
@@ -139,8 +148,8 @@ Cada utilizador tem um perfil que funciona como "Painel de Controlo":
 | `status` | `active`, `suspended`, `banned` | Se o utilizador pode usar o serviço |
 | `plan_tier` | `free`, `pro`, `enterprise` | Plano de subscrição |
 | `paypal_subscription_id` | string \| null | ID da subscrição PayPal ativa (pro) |
-| `name` | string | Nome do utilizador (do Google) |
-| `avatar_url` | string | Foto de perfil (do Google) |
+| `name` | string | Nome do utilizador (do Google/GitHub/Apple) |
+| `avatar_url` | string | Foto de perfil (do Google/GitHub/Apple) |
 
 O plano `enterprise` é gerido manualmente (sem PayPal). A coluna `paypal_subscription_id`
 fica `null` para contas enterprise.
@@ -368,41 +377,47 @@ async def event_stream(user_id: str):
 
 ## 9. Variáveis de Ambiente
 
-```
-# Supabase (obrigatório)
-SUPABASE_URL=https://xxxxx.supabase.co
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_KEY=eyJ...  # chave service_role (para webhooks)
+> As variáveis abaixo devem ser lidas de `os.getenv()` no backend.
+> Os valores reais serão configurados posteriormente pelo utilizador.
+> O agente deve usar nomes exatamente como abaixo e deixar placeholders
+> ou valores default sensíveis.
 
-# PayPal (obrigatório)
-PAYPAL_CLIENT_ID=Af...
-PAYPAL_CLIENT_SECRET=EH...
-PAYPAL_WEBHOOK_ID=WH-...    # para verificar assinatura dos webhooks
-PAYPAL_PRO_PLAN_ID=P-XXXXX  # ID do plano Pro no PayPal
+```python
+# === Supabase ===
+SUPABASE_URL          # URL do projeto Supabase (ex: https://xxx.supabase.co)
+SUPABASE_ANON_KEY     # Chave anónima do Supabase (frontend)
+SUPABASE_SERVICE_KEY  # Chave service_role do Supabase (webhooks/backend)
 
-# Planos
-FREE_TIER_MAX_SERVERS=1
-FREE_TIER_RPM=10
-PRO_TIER_MAX_SERVERS=10
-PRO_TIER_RPM=100
+# === PayPal ===
+PAYPAL_CLIENT_ID       # Client ID da app PayPal
+PAYPAL_CLIENT_SECRET   # Client Secret da app PayPal
+PAYPAL_WEBHOOK_ID      # ID do Webhook PayPal (verificação de assinatura)
+PAYPAL_PRO_PLAN_ID     # ID do plano "Pro" criado no PayPal
+
+# === Limites dos Planos ===
+FREE_TIER_MAX_SERVERS  # default: 1
+FREE_TIER_RPM          # default: 10
+PRO_TIER_MAX_SERVERS   # default: 10
+PRO_TIER_RPM           # default: 100
 ```
 
 ---
 
 ## 10. Checklist de Implementação
 
-- [ ] Configurar Google OAuth no Supabase (dashboard)
-- [ ] Criar tabela `profiles` no Supabase com trigger `on_auth_user_created`
-- [ ] Adicionar `user_id` à tabela `servers` no SQLite local (migration automática)
-- [ ] Implementar middleware de validação JWT nas rotas Management API
-- [ ] Filtrar servidores por `user_id` nas queries (cada user vê só os seus)
-- [ ] Implementar login Google no frontend (Supabase Auth + Google OAuth)
-- [ ] Implementar `POST /v1/webhooks/paypal` com verificação de assinatura
-- [ ] Mapear eventos PayPal → atualização de `profiles` no Supabase
-- [ ] Sincronizar `profiles` do Supabase com `servers` no SQLite local
-- [ ] Implementar cache de profiles (60s TTL)
-- [ ] Verificação em cascata nas rotas MCP Proxy (user → plan → server)
-- [ ] Aplicar limites por plano: RPM, max_servers, log_retention, timeout
-- [ ] Implementar plano Enterprise (manual, sem PayPal)
-- [ ] Registrar sessions SSE e terminar ao suspender utilizador
-- [ ] Atualizar frontend: login Google, botão PayPal Pro, mostrar plano, quotas
+- [ ] **Backend**: Adicionar `user_id` à tabela `servers` no SQLite (migration automática)
+- [ ] **Backend**: Implementar middleware de validação JWT nas rotas Management API
+- [ ] **Backend**: Filtrar servidores por `user_id` nas queries (cada user vê só os seus)
+- [ ] **Backend**: Implementar `POST /v1/webhooks/paypal` com verificação de assinatura
+- [ ] **Backend**: Mapear eventos PayPal → atualização de `profiles` via Supabase Service API
+- [ ] **Backend**: Sincronizar `profiles` do Supabase com `servers` no SQLite local
+- [ ] **Backend**: Implementar cache de profiles (60s TTL)
+- [ ] **Backend**: Verificação em cascata nas rotas MCP Proxy (user → plan → server)
+- [ ] **Backend**: Aplicar limites por plano: RPM, max_servers, log_retention, timeout
+- [ ] **Backend**: Implementar plano Enterprise (manual, sem PayPal)
+- [ ] **Backend**: Registrar sessions SSE e terminar ao suspender utilizador
+- [ ] **Frontend**: Login com Google, GitHub e Apple (Supabase Auth)
+- [ ] **Frontend**: Botão "Assinar Pro" com PayPal
+- [ ] **Frontend**: Mostrar plano atual, quotas (servidores usados, RPM restante)
+- [ ] **DB (SQL)**: Script de criação da tabela `profiles` no Supabase com trigger
+- [ ] **DB (SQL)**: Índice `user_id` na tabela `servers` do SQLite
