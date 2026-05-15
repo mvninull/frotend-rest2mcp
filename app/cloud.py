@@ -16,27 +16,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, Response, JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, and_
 
 try:
-    from .cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal
+    from .cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal, engine, Base
     from .openapi import MCPServerManager, create_mcp_server
     from .utils import logger
 except ImportError:
-    from cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal
+    from cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal, engine, Base
     from openapi import MCPServerManager, create_mcp_server
     from utils import logger
 
 
 def _make_log_func(server_id: str):
-    def log_func(sid: str, tool: str, status: int, duration: float):
+    def log_func(sid: str, tool: str, status: int, duration: float, **kwargs):
         try:
             db = SessionLocal()
             log = LogDB(
                 server_id=sid or server_id,
                 tool_called=str(tool),
+                method=kwargs.get("method"),
                 status_code=status,
                 duration_ms=duration,
+                request_body=kwargs.get("request_body"),
+                response_body=kwargs.get("response_body"),
             )
             db.add(log)
             db.commit()
@@ -115,6 +118,7 @@ class ActiveServer:
             host="127.0.0.1",
             port=self.port,
             log_level="error",
+            timeout_keep_alive=0,
         )
         self.uv_server = uvicorn.Server(config)
 
@@ -201,6 +205,7 @@ class ServerListItem(BaseModel):
     name: str
     status: str
     url_sse: str
+    transport: str
     created_at: str
 
 
@@ -211,10 +216,14 @@ class UpdateServerRequest(BaseModel):
 
 
 class LogEntry(BaseModel):
+    id: int
     timestamp: str
     tool_called: str
+    method: str | None = None
     status_code: int
     duration_ms: float
+    request_body: str | None = None
+    response_body: str | None = None
 
 
 # ─── Management API ────────────────────────────────────────────────────────────
@@ -298,6 +307,7 @@ async def list_servers(db: Session = Depends(get_db)):
                 server_id=s.server_id,
                 name=s.name,
                 status="active" if s.is_active else "inactive",
+                transport=t,
                 url_sse=url,
                 created_at=s.created_at.isoformat(),
             )
@@ -340,6 +350,7 @@ async def update_server(server_id: str, req: UpdateServerRequest, db: Session = 
         server_id=record.server_id,
         name=record.name,
         status="active" if record.is_active else "inactive",
+        transport=t,
         url_sse=url,
         created_at=record.created_at.isoformat(),
     )
@@ -363,37 +374,129 @@ async def delete_server(server_id: str, db: Session = Depends(get_db)):
 # ─── Logs Endpoint ─────────────────────────────────────────────────────────────
 
 
+def _log_to_entry(log: LogDB) -> LogEntry:
+    return LogEntry(
+        id=log.id,
+        timestamp=log.timestamp.isoformat(),
+        tool_called=log.tool_called,
+        method=log.method,
+        status_code=log.status_code,
+        duration_ms=log.duration_ms,
+        request_body=log.request_body,
+        response_body=log.response_body,
+    )
+
+
 @app.get("/v1/servers/{server_id}/logs")
-async def get_logs(server_id: str, limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+async def get_logs(
+    server_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    status_min: int | None = None,
+    status_max: int | None = None,
+    tool: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    db: Session = Depends(get_db),
+):
     server = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
     if not server:
         raise HTTPException(status_code=404, detail="Servidor não encontrado")
 
-    logs = (
-        db.query(LogDB)
-        .filter(LogDB.server_id == server_id)
-        .order_by(desc(LogDB.timestamp))
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    filters = [LogDB.server_id == server_id]
+    if status_min is not None:
+        filters.append(LogDB.status_code >= status_min)
+    if status_max is not None:
+        filters.append(LogDB.status_code <= status_max)
+    if tool:
+        filters.append(LogDB.tool_called.ilike(f"%{tool}%"))
+    if from_date:
+        filters.append(LogDB.timestamp >= from_date)
+    if to_date:
+        filters.append(LogDB.timestamp <= to_date)
 
-    return [
-        LogEntry(
-            timestamp=log.timestamp.isoformat(),
-            tool_called=log.tool_called,
-            status_code=log.status_code,
-            duration_ms=log.duration_ms,
+    logs = db.query(LogDB).filter(and_(*filters)).order_by(desc(LogDB.timestamp)).offset(offset).limit(limit).all()
+
+    return [_log_to_entry(log) for log in logs]
+
+
+@app.get("/v1/servers/{server_id}/logs/export")
+async def export_logs(
+    server_id: str,
+    format: str = "json",
+    status_min: int | None = None,
+    status_max: int | None = None,
+    tool: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
+    db: Session = Depends(get_db),
+):
+    server = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor não encontrado")
+
+    filters = [LogDB.server_id == server_id]
+    if status_min is not None:
+        filters.append(LogDB.status_code >= status_min)
+    if status_max is not None:
+        filters.append(LogDB.status_code <= status_max)
+    if tool:
+        filters.append(LogDB.tool_called.ilike(f"%{tool}%"))
+    if from_date:
+        filters.append(LogDB.timestamp >= from_date)
+    if to_date:
+        filters.append(LogDB.timestamp <= to_date)
+
+    logs = db.query(LogDB).filter(and_(*filters)).order_by(desc(LogDB.timestamp)).all()
+    data = [_log_to_entry(log).model_dump() for log in logs]
+
+    if format == "csv":
+        import csv
+        import io
+
+        output = io.StringIO()
+        if data:
+            writer = csv.DictWriter(output, fieldnames=data[0].keys())
+            writer.writeheader()
+            writer.writerows(data)
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=logs_{server_id}.csv"},
         )
-        for log in logs
-    ]
+
+    return JSONResponse(content=data, headers={"Content-Disposition": f"attachment; filename=logs_{server_id}.json"})
+
+
+@app.get("/v1/servers/{server_id}/logs/{log_id}")
+async def get_log_detail(server_id: str, log_id: int, db: Session = Depends(get_db)):
+    log = db.query(LogDB).filter(LogDB.id == log_id, LogDB.server_id == server_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Log não encontrado")
+    return _log_to_entry(log)
+
+
+@app.delete("/v1/servers/{server_id}/logs", status_code=204)
+async def clear_logs(server_id: str, db: Session = Depends(get_db)):
+    server = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor não encontrado")
+    db.query(LogDB).filter(LogDB.server_id == server_id).delete()
+    db.commit()
 
 
 # ─── Gateway SSE / MCP Routes ─────────────────────────────────────────────────
 
 
-@app.get("/v1/{server_id}/{apikey}/sse")
+@app.api_route("/v1/{server_id}/{apikey}/sse", methods=["GET", "POST"])
 async def sse_connection(server_id: str, apikey: str, request: Request):
+    if request.method == "POST":
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": "Este endpoint usa SSE (Server-Sent Events), não Streamable HTTP. Use /mcp para Streamable HTTP."
+            },
+        )
     db = SessionLocal()
     try:
         server = _validate_server(server_id, apikey, db)
@@ -414,63 +517,92 @@ async def sse_connection(server_id: str, apikey: str, request: Request):
     internal_sse_url = f"http://127.0.0.1:{active.port}/sse"
 
     async def event_stream():
-        try:
-            for attempt in range(60):
-                try:
-                    async with httpx.AsyncClient(timeout=2.0) as client:
-                        async with client.stream("GET", internal_sse_url) as resp:
-                            if resp.status_code != 200:
-                                yield f"event: error\ndata: Internal server error ({resp.status_code})\n\n"
-                                return
-                            async for line in resp.aiter_lines():
-                                if line.startswith("data: /messages"):
-                                    query = line.split("?", 1)[1].rstrip() if "?" in line else ""
-                                    sep = "?" if query else ""
-                                    yield f"data: /v1/{server_id}/{apikey}/messages{sep}{query}\n"
-                                else:
-                                    yield line + "\n"
+        last_error = None
+        for attempt in range(15):
+            try:
+                async with httpx.AsyncClient(timeout=None) as client:
+                    async with client.stream("GET", internal_sse_url) as resp:
+                        if resp.status_code != 200:
+                            yield f"event: error\ndata: Internal server error ({resp.status_code})\n\n"
                             return
-                except httpx.ConnectError:
-                    if attempt < 59:
-                        await asyncio.sleep(0.5)
-                        continue
-                    return
-                except httpx.ReadTimeout:
-                    continue
-                except Exception:
-                    continue
-        except Exception as e:
-            logger.error(f"Erro no proxy SSE ({server_id}): {e}")
-        finally:
-            logger.info(f"Cliente SSE desconectado: {server_id}")
+                        async for line in resp.aiter_lines():
+                            if line.startswith("data: /messages"):
+                                query = line.split("?", 1)[1].rstrip() if "?" in line else ""
+                                sep = "?" if query else ""
+                                yield f"data: /v1/{server_id}/{apikey}/messages{sep}{query}\n"
+                            else:
+                                yield line + "\n"
+                        return
+            except httpx.ConnectError as e:
+                last_error = f"ConnectError: {e}"
+                logger.warning(f"SSE proxy ConnectError (attempt {attempt + 1}): {e}")
+                await asyncio.sleep(0.5)
+                continue
+            except httpx.ReadTimeout as e:
+                logger.error(f"SSE proxy ReadTimeout (attempt {attempt + 1}): {e}")
+                yield f"event: error\ndata: ReadTimeout: {e}\n\n"
+                return
+            except httpx.RemoteProtocolError as e:
+                logger.error(f"SSE proxy RemoteProtocolError (attempt {attempt + 1}): {e}")
+                yield f"event: error\ndata: RemoteProtocolError: {e}\n\n"
+                return
+            except httpx.TransportError as e:
+                logger.error(f"SSE proxy TransportError (attempt {attempt + 1}): {e}")
+                yield f"event: error\ndata: TransportError: {e}\n\n"
+                return
+        yield f"event: error\ndata: Failed to connect: {last_error}\n\n"
+        logger.info(f"Cliente SSE desconectado: {server_id}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.post("/v1/{server_id}/{apikey}/messages")
 async def messages_endpoint(server_id: str, apikey: str, request: Request):
+    db = SessionLocal()
+    try:
+        server = _validate_server(server_id, apikey, db)
+        if not server:
+            return Response(status_code=404, content="Servidor não encontrado")
+        if not server.is_active:
+            return Response(status_code=403, content="Servidor inativo")
+    finally:
+        db.close()
+
     key = f"{server_id}:{apikey}"
     if key not in active_servers:
-        return Response(status_code=404, content="Nenhuma sessão ativa para este servidor")
+        active_servers[key] = ActiveServer(server)
 
     active = active_servers[key]
+    await active.ensure_running(transport="sse")
+
     if not active.uv_server or active.uv_server.should_exit:
         return Response(status_code=503, content="Servidor MCP não está rodando")
 
     body = await request.body()
     ct = request.headers.get("content-type", "application/json")
+    query = request.scope.get("query_string", b"").decode()
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    url = f"http://127.0.0.1:{active.port}/messages/"
+    if query:
+        url += "?" + query
+
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         resp = await client.post(
-            f"http://127.0.0.1:{active.port}/messages",
+            url,
             content=body,
             headers={"content-type": ct},
         )
 
+    resp_headers = {}
+    for h in ("content-type", "mcp-session-id"):
+        val = resp.headers.get(h)
+        if val:
+            resp_headers[h] = val
+
     return Response(
         content=resp.content,
         status_code=resp.status_code,
-        media_type=resp.headers.get("content-type", "application/json"),
+        headers=resp_headers or None,
     )
 
 
@@ -560,6 +692,17 @@ async def mcp_get_stream(server_id: str, apikey: str, request: Request):
 @app.get("/health")
 async def health():
     return {"status": "ok", "active_servers": len(active_servers)}
+
+
+@app.post("/v1/reset")
+async def reset_database():
+    for key in list(active_servers.keys()):
+        await active_servers[key].stop()
+        del active_servers[key]
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    logger.info("Banco de dados resetado com sucesso")
+    return {"status": "ok", "message": "Banco de dados resetado"}
 
 
 # ─── Entrypoint ────────────────────────────────────────────────────────────────

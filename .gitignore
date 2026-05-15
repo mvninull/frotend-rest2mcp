@@ -13,3 +13,10 @@ Thumbs.db
 
 # Artefactos indesejados
 nul
+
+# Database
+*.db
+
+# Debug
+debug_err*.txt
+todo.md

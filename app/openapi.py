@@ -19,18 +19,46 @@ class LoggedTransport(httpx.AsyncBaseTransport):
         self.log_func = log_func
         self.server_id = server_id
 
+    def _truncate(self, data: bytes | None, max_len: int = 5000) -> str | None:
+        if not data:
+            return None
+        try:
+            text = data.decode("utf-8", errors="replace")
+            if len(text) > max_len:
+                text = text[:max_len] + f"\n... [truncated {len(text)} chars]"
+            return text
+        except Exception:
+            return None
+
     async def handle_async_request(self, request):
         start = time.time()
+        req_body = self._truncate(request.content)
         try:
             response = await self.inner.handle_async_request(request)
             duration = (time.time() - start) * 1000
             if self.log_func:
-                self.log_func(self.server_id, str(request.url), response.status_code, duration)
+                resp_body = None
+                try:
+                    raw = await response.aread()
+                    resp_body = self._truncate(raw)
+                except Exception:
+                    resp_body = None
+                self.log_func(
+                    self.server_id,
+                    str(request.url),
+                    response.status_code,
+                    duration,
+                    method=request.method,
+                    request_body=req_body,
+                    response_body=resp_body,
+                )
             return response
         except Exception:
             duration = (time.time() - start) * 1000
             if self.log_func:
-                self.log_func(self.server_id, str(request.url), 0, duration)
+                self.log_func(
+                    self.server_id, str(request.url), 0, duration, method=request.method, request_body=req_body
+                )
             raise
 
 
