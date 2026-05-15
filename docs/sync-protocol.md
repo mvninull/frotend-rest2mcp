@@ -23,8 +23,11 @@ A coluna `user_id` na tabela `servers` (SQLite) vincula cada servidor ao seu don
 
 ### 2.1. Registo / Login (Frontend)
 
-O utilizador faz login via **Supabase Auth** (email + password ou OAuth).
+O utilizador faz login via **Google OAuth** através do Supabase Auth.
 O Supabase devolve um **JWT** que o frontend armazena e envia em cada requisição.
+
+> Nota: O Supabase também permite adicionar outros providers (GitHub, email+password)
+> no futuro sem alterar o backend — basta configurar no dashboard do Supabase.
 
 ### 2.2. Criação automática de `profiles`
 
@@ -36,12 +39,28 @@ cria o registo na tabela `profiles`:
 create table profiles (
   id          uuid references auth.users not null primary key,
   email       text,
+  name        text,
+  avatar_url  text,
   status      text check (status in ('active', 'suspended', 'banned')) default 'active',
-  plan_tier   text check (plan_tier in ('free', 'pro')) default 'free',
+  plan_tier   text check (plan_tier in ('free', 'pro', 'enterprise')) default 'free',
   paypal_subscription_id text,
   created_at  timestamp default now(),
   updated_at  timestamp default now()
 );
+
+-- Trigger: criar profile automaticamente após signup
+create function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, name, avatar_url)
+  values (new.id, new.email, new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'avatar_url');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
 ```
 
 ### 2.3. Middleware JWT (FastAPI)
@@ -118,8 +137,13 @@ Cada utilizador tem um perfil que funciona como "Painel de Controlo":
 | Campo | Valores | Descrição |
 |---|---|---|
 | `status` | `active`, `suspended`, `banned` | Se o utilizador pode usar o serviço |
-| `plan_tier` | `free`, `pro` | Plano de subscrição |
-| `paypal_subscription_id` | string \| null | ID da subscrição PayPal ativa |
+| `plan_tier` | `free`, `pro`, `enterprise` | Plano de subscrição |
+| `paypal_subscription_id` | string \| null | ID da subscrição PayPal ativa (pro) |
+| `name` | string | Nome do utilizador (do Google) |
+| `avatar_url` | string | Foto de perfil (do Google) |
+
+O plano `enterprise` é gerido manualmente (sem PayPal). A coluna `paypal_subscription_id`
+fica `null` para contas enterprise.
 
 ---
 
@@ -144,9 +168,9 @@ async def verify_paypal_webhook(headers, body):
 
 | Evento PayPal | Ação no Supabase (`profiles`) | Efeito no Gateway |
 |---|---|---|
-| `BILLING.SUBSCRIPTION.ACTIVATED` | `plan_tier = 'pro'`, `status = 'active'`, guardar `paypal_subscription_id` | Liberta criação de servidores ilimitados |
-| `BILLING.SUBSCRIPTION.PAYMENT.FAILED` | `status = 'suspended'` | Bloqueia TODOS os servidores do utilizador (is_active = false) |
-| `BILLING.SUBSCRIPTION.CANCELLED` | `plan_tier = 'free'`, limpar `paypal_subscription_id` | Desativa servidores que excedam o limite free |
+| `BILLING.SUBSCRIPTION.ACTIVATED` | `plan_tier = 'pro'`, `status = 'active'`, guardar `paypal_subscription_id` | Atualiza limites: max 10 servidores, 100 RPM |
+| `BILLING.SUBSCRIPTION.PAYMENT.FAILED` | `status = 'suspended'` | Bloqueia TODOS os servidores (is_active = false) + termina sessions SSE |
+| `BILLING.SUBSCRIPTION.CANCELLED` | `plan_tier = 'free'`, limpar `paypal_subscription_id` | Desativa servidores que excedam 1; reduz RPM para 10 |
 | `BILLING.SUBSCRIPTION.RE-ACTIVATED` | `status = 'active'` | Reativa todos os servidores (is_active = true) |
 
 ### Comportamento pós-evento
@@ -215,16 +239,37 @@ def invalidate_profile_cache(user_id: str):
     profile_cache.pop(user_id, None)
 ```
 
-### 6.3. Limites por Plano
+### 6.3. Planos (Tiers)
 
-| Plano | Máx. Servidores | Campos permitidos |
-|---|---|---|
-| `free` | 1 | Transporte SSE ou HTTP |
-| `pro` | Ilimitado | Transporte SSE ou HTTP |
+#### Tabela Comparativa
 
-A validação acontece:
-- **No create** (`POST /v1/servers`): se `plan_tier = free` e o utilizador já tem 1 servidor, retorna **402 Payment Required**
-- **No sync** (pós-webhook): se o utilizador passou de `pro` para `free` e tem >1 servidor, os excedentes são marcados `is_active = false`
+| Característica | Free | Pro | Enterprise |
+|---|---|---|---|
+| **Preço** | $0/mês | $9.90–$15.00/mês (PayPal) | Sob consulta |
+| **Servidores** | 1–2 | Até 10 | Ilimitados |
+| **RPM (req/min)** | 10 RPM | 100 RPM | Sem limite |
+| **Logs** | Últimas 24h | Até 30 dias | Persistentes (bucket S3/GCS) |
+| **Timeout inatividade** | 15 min | Sem timeout agressivo | Always-on |
+| **Suporte** | Comunidade / Docs | Prioritário por e-mail | Dedicado |
+| **Customização** | — | — | Domínio próprio, whitelist de IPs |
+| **Pagamento** | — | PayPal (subscrição) | Fatura / Contrato |
+
+#### Validação
+
+| Contexto | Ação |
+|---|---|
+| **Create** (`POST /v1/servers`) | `free` com 1 servidor → **402 Payment Required** |
+| **Downgrade** (pro → free via webhook) | Servidores excedentes marcados `is_active = false` |
+| **Suspensão** (pagamento falhou) | Todos os servidores marcados `is_active = false` |
+| **Reativação** (pagamento retomou) | Todos os servidores restaurados para `is_active = true` |
+
+#### Notas sobre o Plano Enterprise
+
+- Gerido manualmente (sem PayPal)
+- `paypal_subscription_id` fica `null`
+- `plan_tier = 'enterprise'` é definido manualmente no Supabase
+- RPM e servidores são ilimitados na camada de aplicação
+- Logs podem ser configurados para bucket externo (S3/GCS) via variável de ambiente
 
 ### 6.4. Lógica de Interrupção Imediata
 
@@ -333,24 +378,31 @@ SUPABASE_SERVICE_KEY=eyJ...  # chave service_role (para webhooks)
 PAYPAL_CLIENT_ID=Af...
 PAYPAL_CLIENT_SECRET=EH...
 PAYPAL_WEBHOOK_ID=WH-...    # para verificar assinatura dos webhooks
+PAYPAL_PRO_PLAN_ID=P-XXXXX  # ID do plano Pro no PayPal
 
-# Plano free
+# Planos
 FREE_TIER_MAX_SERVERS=1
+FREE_TIER_RPM=10
+PRO_TIER_MAX_SERVERS=10
+PRO_TIER_RPM=100
 ```
 
 ---
 
 ## 10. Checklist de Implementação
 
-- [ ] Adicionar `user_id` à tabela `servers` no SQLite (migration automática)
-- [ ] Criar tabela `profiles` no Supabase
-- [ ] Implementar middleware JWT nas rotas Management API
+- [ ] Configurar Google OAuth no Supabase (dashboard)
+- [ ] Criar tabela `profiles` no Supabase com trigger `on_auth_user_created`
+- [ ] Adicionar `user_id` à tabela `servers` no SQLite local (migration automática)
+- [ ] Implementar middleware de validação JWT nas rotas Management API
 - [ ] Filtrar servidores por `user_id` nas queries (cada user vê só os seus)
+- [ ] Implementar login Google no frontend (Supabase Auth + Google OAuth)
 - [ ] Implementar `POST /v1/webhooks/paypal` com verificação de assinatura
 - [ ] Mapear eventos PayPal → atualização de `profiles` no Supabase
 - [ ] Sincronizar `profiles` do Supabase com `servers` no SQLite local
 - [ ] Implementar cache de profiles (60s TTL)
 - [ ] Verificação em cascata nas rotas MCP Proxy (user → plan → server)
-- [ ] Limitar criação de servidores por plano (free = 1, pro = ∞)
+- [ ] Aplicar limites por plano: RPM, max_servers, log_retention, timeout
+- [ ] Implementar plano Enterprise (manual, sem PayPal)
 - [ ] Registrar sessions SSE e terminar ao suspender utilizador
-- [ ] Atualizar frontend: login Supabase, botão PayPal, mostrar plano
+- [ ] Atualizar frontend: login Google, botão PayPal Pro, mostrar plano, quotas
