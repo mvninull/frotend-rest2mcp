@@ -24,6 +24,7 @@ class ServerDB(Base):
     target_url = Column(String(500), nullable=True)
     transport = Column(String(10), default="http")
     is_active = Column(Boolean, default=True)
+    user_id = Column(String(100), nullable=True, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
@@ -50,21 +51,29 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def init_db():
     Base.metadata.create_all(bind=engine)
-    _migrate_logs()
+    _migrate_table(
+        "logs",
+        [
+            ("method", "VARCHAR(10)"),
+            ("request_body", "TEXT"),
+            ("response_body", "TEXT"),
+        ],
+    )
+    _migrate_table(
+        "servers",
+        [
+            ("user_id", "VARCHAR(100)"),
+        ],
+    )
 
 
-def _migrate_logs():
+def _migrate_table(table_name: str, columns_to_add: list[tuple[str, str]]):
     inspector = sa_inspect(engine)
-    columns = [c["name"] for c in inspector.get_columns("logs")]
-    migrates = [
-        ("method", "VARCHAR(10)"),
-        ("request_body", "TEXT"),
-        ("response_body", "TEXT"),
-    ]
-    for col_name, col_type in migrates:
+    columns = [c["name"] for c in inspector.get_columns(table_name)]
+    for col_name, col_type in columns_to_add:
         if col_name not in columns:
             with engine.connect() as conn:
-                conn.execute(text(f"ALTER TABLE logs ADD COLUMN {col_name} {col_type}"))
+                conn.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}"))
                 conn.commit()
 
 

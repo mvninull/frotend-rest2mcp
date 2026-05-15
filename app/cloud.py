@@ -22,10 +22,44 @@ try:
     from .cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal, engine, Base
     from .openapi import MCPServerManager, create_mcp_server
     from .utils import logger
+    from .config import (
+        GATEWAY_HOST,
+        GATEWAY_PORT,
+        PUBLIC_URL,
+        FREE_TIER_MAX_SERVERS,
+        FREE_TIER_RPM,
+        PRO_TIER_MAX_SERVERS,
+        PRO_TIER_RPM,
+    )
+    from .supabase_auth import (
+        require_auth,
+        get_cached_profile,
+        get_tier_limits,
+        invalidate_profile_cache,
+        upsert_supabase_profile,
+    )
+    from .paypal import verify_webhook_signature, parse_webhook_event
 except ImportError:
     from cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal, engine, Base
     from openapi import MCPServerManager, create_mcp_server
     from utils import logger
+    from config import (
+        GATEWAY_HOST,
+        GATEWAY_PORT,
+        PUBLIC_URL,
+        FREE_TIER_MAX_SERVERS,
+        FREE_TIER_RPM,
+        PRO_TIER_MAX_SERVERS,
+        PRO_TIER_RPM,
+    )
+    from supabase_auth import (
+        require_auth,
+        get_cached_profile,
+        get_tier_limits,
+        invalidate_profile_cache,
+        upsert_supabase_profile,
+    )
+    from paypal import verify_webhook_signature, parse_webhook_event
 
 
 def _make_log_func(server_id: str):
@@ -48,11 +82,6 @@ def _make_log_func(server_id: str):
             pass
 
     return log_func
-
-
-GATEWAY_HOST = os.getenv("GATEWAY_HOST", "0.0.0.0")
-GATEWAY_PORT = int(os.getenv("GATEWAY_PORT", "8080"))
-PUBLIC_URL = os.getenv("PUBLIC_URL", f"http://localhost:{GATEWAY_PORT}")
 
 
 def _find_free_port():
@@ -154,6 +183,47 @@ class ActiveServer:
 
 active_servers: dict[str, ActiveServer] = {}
 
+sse_sessions: dict[str, list[asyncio.Event]] = {}
+
+
+def register_sse_session(user_id: str) -> asyncio.Event:
+    exit_event = asyncio.Event()
+    sse_sessions.setdefault(user_id, []).append(exit_event)
+    return exit_event
+
+
+def unregister_sse_session(user_id: str, event: asyncio.Event):
+    if user_id in sse_sessions:
+        sse_sessions[user_id] = [e for e in sse_sessions[user_id] if e is not event]
+
+
+async def notify_session_termination(user_id: str):
+    events = sse_sessions.get(user_id, [])
+    for event in events:
+        event.set()
+
+
+async def cascade_guard(server_id: str, apikey: str, db: Session) -> ServerDB | None:
+    server = _validate_server(server_id, apikey, db)
+    if not server:
+        return None
+    if not server.is_active:
+        return None
+    user_id = server.user_id
+    if not user_id:
+        return server
+    try:
+        profile = await get_cached_profile(user_id)
+    except Exception:
+        return server
+    if profile.get("status") != "active":
+        return None
+    limits = get_tier_limits(profile.get("plan_tier", "free"))
+    active_count = db.query(ServerDB).filter(ServerDB.user_id == user_id, ServerDB.is_active == True).count()
+    if profile.get("plan_tier") == "free" and active_count > limits["max_servers"]:
+        return None
+    return server
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -215,6 +285,17 @@ class UpdateServerRequest(BaseModel):
     transport: str | None = None
 
 
+class ProfileResponse(BaseModel):
+    id: str
+    email: str | None = None
+    name: str | None = None
+    avatar_url: str | None = None
+    status: str
+    plan_tier: str
+    servers_count: int = 0
+    servers_limit: int = 1
+
+
 class LogEntry(BaseModel):
     id: int
     timestamp: str
@@ -230,8 +311,10 @@ class LogEntry(BaseModel):
 
 
 @app.post("/v1/servers", status_code=201)
-async def create_server(req: CreateServerRequest, db: Session = Depends(get_db)):
-    logger.info(f"Criando servidor: {req.name} ({req.spec_url})")
+async def create_server(req: CreateServerRequest, request: Request, db: Session = Depends(get_db)):
+    await require_auth(request)
+    user_id = request.state.user_id
+    logger.info(f"Criando servidor: {req.name} ({req.spec_url}) para user {user_id}")
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -250,6 +333,16 @@ async def create_server(req: CreateServerRequest, db: Session = Depends(get_db))
             spec_data = temp.spec
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Erro ao converter Swagger 2.0: {e}")
+
+    profile = await get_cached_profile(user_id)
+    plan_tier = profile.get("plan_tier", "free")
+    limits = get_tier_limits(plan_tier)
+    current_count = db.query(ServerDB).filter(ServerDB.user_id == user_id).count()
+    if current_count >= limits["max_servers"]:
+        raise HTTPException(
+            status_code=402 if plan_tier == "free" else 429,
+            detail=f"Limite de {limits['max_servers']} servidores atingido para o plano {plan_tier}. Faça upgrade para Pro.",
+        )
 
     server_id = _generate_id()
     apikey = _generate_apikey()
@@ -274,13 +367,14 @@ async def create_server(req: CreateServerRequest, db: Session = Depends(get_db))
         target_url=target_url,
         transport=transport,
         is_active=True,
+        user_id=user_id,
     )
     db.add(record)
     db.commit()
 
     suffix = "sse" if transport == "sse" else "mcp"
     url_sse = f"{PUBLIC_URL}/v1/{server_id}/{apikey}/{suffix}"
-    logger.info(f"Servidor criado: {server_id} ({transport}) -> {url_sse}")
+    logger.info(f"Servidor criado: {server_id} ({transport}) -> {url_sse} para user {user_id}")
 
     return ServerResponse(
         server_id=server_id,
@@ -295,8 +389,10 @@ async def create_server(req: CreateServerRequest, db: Session = Depends(get_db))
 
 
 @app.get("/v1/servers")
-async def list_servers(db: Session = Depends(get_db)):
-    servers = db.query(ServerDB).order_by(desc(ServerDB.created_at)).all()
+async def list_servers(request: Request, db: Session = Depends(get_db)):
+    await require_auth(request)
+    user_id = request.state.user_id
+    servers = db.query(ServerDB).filter(ServerDB.user_id == user_id).order_by(desc(ServerDB.created_at)).all()
     result = []
     for s in servers:
         t = s.transport or "http"
@@ -316,8 +412,10 @@ async def list_servers(db: Session = Depends(get_db)):
 
 
 @app.patch("/v1/servers/{server_id}")
-async def update_server(server_id: str, req: UpdateServerRequest, db: Session = Depends(get_db)):
-    record = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
+async def update_server(server_id: str, req: UpdateServerRequest, request: Request, db: Session = Depends(get_db)):
+    await require_auth(request)
+    user_id = request.state.user_id
+    record = db.query(ServerDB).filter(ServerDB.server_id == server_id, ServerDB.user_id == user_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Servidor não encontrado")
 
@@ -357,8 +455,10 @@ async def update_server(server_id: str, req: UpdateServerRequest, db: Session = 
 
 
 @app.delete("/v1/servers/{server_id}", status_code=204)
-async def delete_server(server_id: str, db: Session = Depends(get_db)):
-    record = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
+async def delete_server(server_id: str, request: Request, db: Session = Depends(get_db)):
+    await require_auth(request)
+    user_id = request.state.user_id
+    record = db.query(ServerDB).filter(ServerDB.server_id == server_id, ServerDB.user_id == user_id).first()
     if not record:
         raise HTTPException(status_code=404, detail="Servidor não encontrado")
 
@@ -390,6 +490,7 @@ def _log_to_entry(log: LogDB) -> LogEntry:
 @app.get("/v1/servers/{server_id}/logs")
 async def get_logs(
     server_id: str,
+    request: Request,
     limit: int = 50,
     offset: int = 0,
     status_min: int | None = None,
@@ -399,7 +500,10 @@ async def get_logs(
     to_date: str | None = None,
     db: Session = Depends(get_db),
 ):
-    server = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
+    await require_auth(request)
+    server = (
+        db.query(ServerDB).filter(ServerDB.server_id == server_id, ServerDB.user_id == request.state.user_id).first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Servidor não encontrado")
 
@@ -423,6 +527,7 @@ async def get_logs(
 @app.get("/v1/servers/{server_id}/logs/export")
 async def export_logs(
     server_id: str,
+    request: Request,
     format: str = "json",
     status_min: int | None = None,
     status_max: int | None = None,
@@ -431,7 +536,10 @@ async def export_logs(
     to_date: str | None = None,
     db: Session = Depends(get_db),
 ):
-    server = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
+    await require_auth(request)
+    server = (
+        db.query(ServerDB).filter(ServerDB.server_id == server_id, ServerDB.user_id == request.state.user_id).first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Servidor não encontrado")
 
@@ -469,7 +577,13 @@ async def export_logs(
 
 
 @app.get("/v1/servers/{server_id}/logs/{log_id}")
-async def get_log_detail(server_id: str, log_id: int, db: Session = Depends(get_db)):
+async def get_log_detail(server_id: str, log_id: int, request: Request, db: Session = Depends(get_db)):
+    await require_auth(request)
+    server = (
+        db.query(ServerDB).filter(ServerDB.server_id == server_id, ServerDB.user_id == request.state.user_id).first()
+    )
+    if not server:
+        raise HTTPException(status_code=404, detail="Servidor não encontrado")
     log = db.query(LogDB).filter(LogDB.id == log_id, LogDB.server_id == server_id).first()
     if not log:
         raise HTTPException(status_code=404, detail="Log não encontrado")
@@ -477,8 +591,11 @@ async def get_log_detail(server_id: str, log_id: int, db: Session = Depends(get_
 
 
 @app.delete("/v1/servers/{server_id}/logs", status_code=204)
-async def clear_logs(server_id: str, db: Session = Depends(get_db)):
-    server = db.query(ServerDB).filter(ServerDB.server_id == server_id).first()
+async def clear_logs(server_id: str, request: Request, db: Session = Depends(get_db)):
+    await require_auth(request)
+    server = (
+        db.query(ServerDB).filter(ServerDB.server_id == server_id, ServerDB.user_id == request.state.user_id).first()
+    )
     if not server:
         raise HTTPException(status_code=404, detail="Servidor não encontrado")
     db.query(LogDB).filter(LogDB.server_id == server_id).delete()
@@ -499,13 +616,13 @@ async def sse_connection(server_id: str, apikey: str, request: Request):
         )
     db = SessionLocal()
     try:
-        server = _validate_server(server_id, apikey, db)
+        server = await cascade_guard(server_id, apikey, db)
         if not server:
-            return Response(status_code=404, content="Servidor não encontrado")
-        if not server.is_active:
-            return Response(status_code=403, content="Servidor inativo")
+            return Response(status_code=403, content="Acesso negado: servidor inativo, suspenso ou limite excedido")
     finally:
         db.close()
+
+    user_id = server.user_id or ""
 
     key = f"{server_id}:{apikey}"
     if key not in active_servers:
@@ -517,41 +634,49 @@ async def sse_connection(server_id: str, apikey: str, request: Request):
     internal_sse_url = f"http://127.0.0.1:{active.port}/sse"
 
     async def event_stream():
+        exit_event = register_sse_session(user_id) if user_id else None
         last_error = None
-        for attempt in range(15):
-            try:
-                async with httpx.AsyncClient(timeout=None) as client:
-                    async with client.stream("GET", internal_sse_url) as resp:
-                        if resp.status_code != 200:
-                            yield f"event: error\ndata: Internal server error ({resp.status_code})\n\n"
+        try:
+            for attempt in range(15):
+                try:
+                    async with httpx.AsyncClient(timeout=None) as client:
+                        async with client.stream("GET", internal_sse_url) as resp:
+                            if resp.status_code != 200:
+                                yield f"event: error\ndata: Internal server error ({resp.status_code})\n\n"
+                                return
+                            async for line in resp.aiter_lines():
+                                if exit_event and exit_event.is_set():
+                                    yield "event: error\ndata: Sessão terminada\n\n"
+                                    return
+                                if line.startswith("data: /messages"):
+                                    query = line.split("?", 1)[1].rstrip() if "?" in line else ""
+                                    sep = "?" if query else ""
+                                    yield f"data: /v1/{server_id}/{apikey}/messages{sep}{query}\n"
+                                else:
+                                    yield line + "\n"
                             return
-                        async for line in resp.aiter_lines():
-                            if line.startswith("data: /messages"):
-                                query = line.split("?", 1)[1].rstrip() if "?" in line else ""
-                                sep = "?" if query else ""
-                                yield f"data: /v1/{server_id}/{apikey}/messages{sep}{query}\n"
-                            else:
-                                yield line + "\n"
-                        return
-            except httpx.ConnectError as e:
-                last_error = f"ConnectError: {e}"
-                logger.warning(f"SSE proxy ConnectError (attempt {attempt + 1}): {e}")
-                await asyncio.sleep(0.5)
-                continue
-            except httpx.ReadTimeout as e:
-                logger.error(f"SSE proxy ReadTimeout (attempt {attempt + 1}): {e}")
-                yield f"event: error\ndata: ReadTimeout: {e}\n\n"
-                return
-            except httpx.RemoteProtocolError as e:
-                logger.error(f"SSE proxy RemoteProtocolError (attempt {attempt + 1}): {e}")
-                yield f"event: error\ndata: RemoteProtocolError: {e}\n\n"
-                return
-            except httpx.TransportError as e:
-                logger.error(f"SSE proxy TransportError (attempt {attempt + 1}): {e}")
-                yield f"event: error\ndata: TransportError: {e}\n\n"
-                return
-        yield f"event: error\ndata: Failed to connect: {last_error}\n\n"
-        logger.info(f"Cliente SSE desconectado: {server_id}")
+                except httpx.ConnectError as e:
+                    last_error = f"ConnectError: {e}"
+                    logger.warning(f"SSE proxy ConnectError (attempt {attempt + 1}): {e}")
+                    await asyncio.sleep(0.5)
+                    continue
+                except httpx.ReadTimeout as e:
+                    logger.error(f"SSE proxy ReadTimeout (attempt {attempt + 1}): {e}")
+                    yield f"event: error\ndata: ReadTimeout: {e}\n\n"
+                    return
+                except httpx.RemoteProtocolError as e:
+                    logger.error(f"SSE proxy RemoteProtocolError (attempt {attempt + 1}): {e}")
+                    yield f"event: error\ndata: RemoteProtocolError: {e}\n\n"
+                    return
+                except httpx.TransportError as e:
+                    logger.error(f"SSE proxy TransportError (attempt {attempt + 1}): {e}")
+                    yield f"event: error\ndata: TransportError: {e}\n\n"
+                    return
+            yield f"event: error\ndata: Failed to connect: {last_error}\n\n"
+        finally:
+            if exit_event:
+                unregister_sse_session(user_id, exit_event)
+            logger.info(f"Cliente SSE desconectado: {server_id}")
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -560,11 +685,9 @@ async def sse_connection(server_id: str, apikey: str, request: Request):
 async def messages_endpoint(server_id: str, apikey: str, request: Request):
     db = SessionLocal()
     try:
-        server = _validate_server(server_id, apikey, db)
+        server = await cascade_guard(server_id, apikey, db)
         if not server:
-            return Response(status_code=404, content="Servidor não encontrado")
-        if not server.is_active:
-            return Response(status_code=403, content="Servidor inativo")
+            return Response(status_code=403, content="Acesso negado")
     finally:
         db.close()
 
@@ -610,11 +733,9 @@ async def _get_or_start_mcp(server_id: str, apikey: str):
     key = f"{server_id}:{apikey}"
     db = SessionLocal()
     try:
-        server = _validate_server(server_id, apikey, db)
+        server = await cascade_guard(server_id, apikey, db)
         if not server:
-            return None, Response(status_code=404, content="Servidor não encontrado")
-        if not server.is_active:
-            return None, Response(status_code=403, content="Servidor inativo")
+            return None, Response(status_code=403, content="Acesso negado")
     finally:
         db.close()
 
@@ -703,6 +824,143 @@ async def reset_database():
     Base.metadata.create_all(bind=engine)
     logger.info("Banco de dados resetado com sucesso")
     return {"status": "ok", "message": "Banco de dados resetado"}
+
+
+# ─── Webhook PayPal ───────────────────────────────────────────────────────────
+
+
+@app.post("/v1/webhooks/paypal")
+async def paypal_webhook(request: Request):
+    body = await request.body()
+    headers = {k.lower(): v for k, v in request.headers.items() if k.lower().startswith("paypal-")}
+    verified = await verify_webhook_signature(headers, body)
+    if not verified:
+        return JSONResponse(status_code=401, content={"detail": "Assinatura do webhook inválida"})
+
+    event = parse_webhook_event(body)
+    if not event:
+        return JSONResponse(status_code=200, content={"status": "ignored"})
+
+    user_id = event.get("custom_id", "")
+    if not user_id:
+        return JSONResponse(status_code=200, content={"status": "ignored", "reason": "no custom_id"})
+
+    action = event["action"]
+    logger.info(f"Webhook PayPal: {event['event_type']} para user {user_id}")
+
+    try:
+        if action == "activated":
+            await upsert_supabase_profile(
+                user_id,
+                {
+                    "plan_tier": "pro",
+                    "status": "active",
+                    "paypal_subscription_id": event.get("subscription_id", ""),
+                },
+            )
+        elif action == "payment_failed":
+            await upsert_supabase_profile(user_id, {"status": "suspended"})
+            await sync_user_servers(user_id)
+        elif action == "cancelled":
+            await upsert_supabase_profile(
+                user_id,
+                {
+                    "plan_tier": "free",
+                    "paypal_subscription_id": None,
+                },
+            )
+            await sync_user_servers(user_id)
+        elif action == "reactivated":
+            await upsert_supabase_profile(user_id, {"status": "active"})
+            await reactivate_user_servers(user_id)
+
+        invalidate_profile_cache(user_id)
+        await notify_session_termination(user_id)
+    except Exception as e:
+        logger.error(f"Erro ao processar webhook PayPal: {e}")
+
+    return JSONResponse(status_code=200, content={"status": "ok"})
+
+
+async def sync_user_servers(user_id: str):
+    db = SessionLocal()
+    try:
+        profile = await get_cached_profile(user_id)
+        servers = db.query(ServerDB).filter(ServerDB.user_id == user_id).all()
+        if profile.get("status") != "active":
+            for s in servers:
+                s.is_active = False
+                key = f"{s.server_id}:{s.apikey}"
+                if key in active_servers:
+                    await active_servers[key].stop()
+                    del active_servers[key]
+        elif profile.get("plan_tier") == "free":
+            limits = get_tier_limits("free")
+            for i, s in enumerate(servers):
+                s.is_active = i < limits["max_servers"]
+                if not s.is_active:
+                    key = f"{s.server_id}:{s.apikey}"
+                    if key in active_servers:
+                        await active_servers[key].stop()
+                        del active_servers[key]
+        db.commit()
+    finally:
+        db.close()
+
+
+async def reactivate_user_servers(user_id: str):
+    db = SessionLocal()
+    try:
+        servers = db.query(ServerDB).filter(ServerDB.user_id == user_id).all()
+        for s in servers:
+            s.is_active = True
+        db.commit()
+    finally:
+        db.close()
+
+
+# ─── Profile / Auth ───────────────────────────────────────────────────────────
+
+
+@app.get("/v1/me")
+async def get_me(request: Request, db: Session = Depends(get_db)):
+    await require_auth(request)
+    user_id = request.state.user_id
+    profile = await get_cached_profile(user_id)
+    servers = db.query(ServerDB).filter(ServerDB.user_id == user_id).all()
+    active_count = sum(1 for s in servers if s.is_active)
+    limits = get_tier_limits(profile.get("plan_tier", "free"))
+    return ProfileResponse(
+        id=user_id,
+        email=profile.get("email"),
+        name=profile.get("name"),
+        avatar_url=profile.get("avatar_url"),
+        status=profile.get("status", "active"),
+        plan_tier=profile.get("plan_tier", "free"),
+        servers_count=len(servers),
+        servers_limit=limits["max_servers"],
+    )
+
+
+@app.post("/v1/auth/register")
+async def auth_register(request: Request):
+    await require_auth(request)
+    user_id = request.state.user_id
+    payload = request.state.jwt_payload
+    try:
+        await upsert_supabase_profile(
+            user_id,
+            {
+                "id": user_id,
+                "email": payload.get("email", ""),
+                "name": payload.get("user_metadata", {}).get("full_name", ""),
+                "avatar_url": payload.get("user_metadata", {}).get("avatar_url", ""),
+            },
+        )
+        return {"status": "ok", "user_id": user_id}
+    except Exception as e:
+        logger.error(f"Erro ao registar utilizador {user_id}: {e}")
+        return JSONResponse(status_code=500, content={"detail": "Erro ao registar utilizador"})
 
 
 # ─── Entrypoint ────────────────────────────────────────────────────────────────
