@@ -4,15 +4,27 @@ import httpx
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 
-from .config import (
-    SUPABASE_URL,
-    SUPABASE_SERVICE_KEY,
-    SUPABASE_ANON_KEY,
-    FREE_TIER_MAX_SERVERS,
-    FREE_TIER_RPM,
-    PRO_TIER_MAX_SERVERS,
-    PRO_TIER_RPM,
-)
+try:
+    from .config import (
+        SUPABASE_URL,
+        SUPABASE_SERVICE_KEY,
+        SUPABASE_ANON_KEY,
+        FREE_TIER_MAX_SERVERS,
+        FREE_TIER_RPM,
+        PRO_TIER_MAX_SERVERS,
+        PRO_TIER_RPM,
+    )
+except ImportError:
+    from config import (
+        SUPABASE_URL,
+        SUPABASE_SERVICE_KEY,
+        SUPABASE_ANON_KEY,
+        FREE_TIER_MAX_SERVERS,
+        FREE_TIER_RPM,
+        PRO_TIER_MAX_SERVERS,
+        PRO_TIER_RPM,
+    )
+
 
 
 JWKS_CACHE = None
