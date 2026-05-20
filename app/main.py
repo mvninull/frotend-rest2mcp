@@ -1,8 +1,8 @@
+import argparse
 import os
 import sys
-import argparse
-from openapi import create_mcp_server
-from server import run_server_stdio, run_server_http, run_server_sse
+
+from server import run_server_http, run_server_sse, run_server_stdio
 from utils import logger, run_with_inspector
 
 # --- Main ---

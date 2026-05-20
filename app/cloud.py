@@ -1,65 +1,61 @@
-import os
-import re
-import json
-import time
 import asyncio
-import socket
+import json
+import os
 import secrets
+import socket
 import string
 import threading
-import uvicorn
-from urllib.parse import urlparse
-import httpx
+import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Request
+from urllib.parse import urlparse
+
+import httpx
+import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, Response, JSONResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy import and_, desc
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, and_
 
 try:
-    from .cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal, engine, Base
-    from .openapi import MCPServerManager, create_mcp_server
-    from .utils import logger
+    from .cloud_models import Base, LogDB, ServerDB, SessionLocal, engine, get_db, init_db
     from .config import (
-        GATEWAY_HOST,
-        GATEWAY_PORT,
-        PUBLIC_URL,
         FREE_TIER_MAX_SERVERS,
         FREE_TIER_RPM,
+        GATEWAY_HOST,
+        GATEWAY_PORT,
         PRO_TIER_MAX_SERVERS,
         PRO_TIER_RPM,
+        PUBLIC_URL,
     )
+    from .openapi import MCPServerManager, create_mcp_server
+    from .paypal import parse_webhook_event, verify_webhook_signature
     from .supabase_auth import (
-        require_auth,
         get_cached_profile,
         get_tier_limits,
         invalidate_profile_cache,
+        require_auth,
         upsert_supabase_profile,
     )
-    from .paypal import verify_webhook_signature, parse_webhook_event
+    from .utils import logger
 except ImportError:
-    from cloud_models import ServerDB, LogDB, init_db, get_db, SessionLocal, engine, Base
-    from openapi import MCPServerManager, create_mcp_server
-    from utils import logger
+    from cloud_models import Base, LogDB, ServerDB, SessionLocal, engine, get_db, init_db
     from config import (
         GATEWAY_HOST,
         GATEWAY_PORT,
         PUBLIC_URL,
-        FREE_TIER_MAX_SERVERS,
-        FREE_TIER_RPM,
-        PRO_TIER_MAX_SERVERS,
-        PRO_TIER_RPM,
     )
+    from openapi import MCPServerManager
+    from paypal import parse_webhook_event, verify_webhook_signature
     from supabase_auth import (
-        require_auth,
         get_cached_profile,
         get_tier_limits,
         invalidate_profile_cache,
+        require_auth,
         upsert_supabase_profile,
     )
-    from paypal import verify_webhook_signature, parse_webhook_event
+    from utils import logger
 
 
 def _make_log_func(server_id: str):

@@ -1,11 +1,12 @@
-from fastapi import FastAPI, HTTPException, Path, Query, Depends, status, Form
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, Field
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-from datetime import datetime, timezone, timedelta
+
 import uvicorn
+from fastapi import Depends, FastAPI, Form, HTTPException, Path, Query, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from pydantic import BaseModel, Field
 
 app = FastAPI(
     title="Tarefas API",

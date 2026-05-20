@@ -1,10 +1,11 @@
-import os
-import sys
-import subprocess
-import time
-import httpx
 import json
+import os
+import subprocess
+import sys
+import time
 from urllib.parse import urlparse
+
+import httpx
 from fastmcp import FastMCP
 
 try:
@@ -176,7 +177,7 @@ class MCPServerManager:
                         token = data.get("access_token") or data.get("token") or data.get("jwt")
                         if token:
                             self.token = token
-                            return f"✅ Login realizado com sucesso!"
+                            return "✅ Login realizado com sucesso!"
                         return "⚠️ Login OK, mas token não encontrado."
                     return f"❌ Erro ({resp.status_code}): {resp.text}"
 

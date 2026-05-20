@@ -1,9 +1,9 @@
 import os
 from datetime import datetime, timezone
-from sqlalchemy import create_engine, Column, String, Boolean, DateTime, Integer, Float, ForeignKey, Text, text
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
-from sqlalchemy import inspect as sa_inspect
 
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, Text, create_engine, text
+from sqlalchemy import inspect as sa_inspect
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///cloud.db")
 

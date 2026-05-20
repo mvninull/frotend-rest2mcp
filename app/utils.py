@@ -1,10 +1,10 @@
-import sys
+import logging
+import os
+import socket
 import subprocess
+import sys
 import threading
 import time
-import socket
-import os
-import logging
 
 
 # Configuração de Log Colorido
@@ -60,7 +60,7 @@ def run_with_inspector(transport: str, spec_url: str, name: str, host: str, port
         logger.info("=" * 50)
         logger.info("MODO DESENVOLVIMENTO (Inspector + STDIO)")
         logger.info("=" * 50)
-        logger.info(f"Lançando Inspector com servidor STDIO...")
+        logger.info("Lançando Inspector com servidor STDIO...")
 
         cmd = [
             "npx",

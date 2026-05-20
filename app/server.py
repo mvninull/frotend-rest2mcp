@@ -1,9 +1,9 @@
-from utils import logger
 from openapi import create_mcp_server
+from utils import logger
 
 
 def run_server_stdio(spec_url, name):
-    logger.info(f"Iniciando modo STDIO")
+    logger.info("Iniciando modo STDIO")
     mcp = create_mcp_server(spec_url, name)
     mcp.run(transport="stdio")
 
