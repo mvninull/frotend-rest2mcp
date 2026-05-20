@@ -12,7 +12,7 @@ class Base(DeclarativeBase):
     pass
 
 
-class ServerDB(Base):
+class ServerDB(Base): 
     __tablename__ = "servers"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
