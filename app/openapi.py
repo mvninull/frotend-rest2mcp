@@ -160,14 +160,32 @@ class MCPServerManager:
                     break
 
         if login_path:
+            _login_path = login_path
+            _base_url = self.base_url
 
             @self.mcp.tool(name="login")
-            async def smart_login(username: str, password: str) -> str:
-                """Faz login na API e configura o token automaticamente."""
-                payload = {"username": username, "password": password}
-                url_to_call = login_path if login_path.startswith("/") else f"/{login_path}"
+            async def smart_login(
+                username: str | None = None,
+                password: str | None = None,
+                provider: str | None = None,
+                provider_token: str | None = None,
+            ) -> str:
+                """Faz login na API e configura o token automaticamente.
 
-                async with httpx.AsyncClient(base_url=self.base_url) as auth_client:
+                Suporta múltiplos fluxos:
+                - Email/senha: informe username e password
+                - OAuth (Google/GitHub/Apple): informe provider e provider_token
+                """
+                url_to_call = _login_path if _login_path.startswith("/") else f"/{_login_path}"
+
+                if provider and provider_token:
+                    payload = {"provider": provider, "token": provider_token}
+                elif username and password:
+                    payload = {"username": username, "password": password}
+                else:
+                    return "⚠️ Informe username+password (email/senha) ou provider+provider_token (OAuth)."
+
+                async with httpx.AsyncClient(base_url=_base_url) as auth_client:
                     resp = await auth_client.post(url_to_call, json=payload)
                     if resp.status_code == 422:
                         resp = await auth_client.post(url_to_call, data=payload)
@@ -180,6 +198,13 @@ class MCPServerManager:
                             return "✅ Login realizado com sucesso!"
                         return "⚠️ Login OK, mas token não encontrado."
                     return f"❌ Erro ({resp.status_code}): {resp.text}"
+
+        @self.mcp.tool()
+        async def set_token(token: str) -> str:
+            """Define manualmente um token JWT para autenticação nas chamadas seguintes.
+            Use esta ferramenta quando já possui um token (ex: obtido via OAuth Google/GitHub)."""
+            self.token = token
+            return "✅ Token configurado com sucesso!"
 
         @self.mcp.tool()
         async def session_status() -> str:
