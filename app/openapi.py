@@ -151,45 +151,102 @@ class MCPServerManager:
                 if os.path.exists(f):
                     os.remove(f)
 
+    def _get_body_schema(self, path: str) -> dict | None:
+        methods = self.spec.get("paths", {}).get(path, {})
+        if not methods:
+            return None
+        post = methods.get("post", {})
+        content = post.get("requestBody", {}).get("content", {})
+        for ct in ("application/json", "application/x-www-form-urlencoded"):
+            schema = content.get(ct, {}).get("schema", {})
+            if schema:
+                return schema
+        return None
+
     def _setup_dynamic_login(self):
-        login_path = None
-        for path, methods in self.spec.get("paths", {}).items():
-            if any(k in path.lower() for k in ["login", "token", "auth/"]):
-                if "post" in methods:
-                    login_path = path
-                    break
+        email_login_path = None
+        oauth_paths: dict[str, str] = {}
+        spec_paths = self.spec.get("paths", {})
+        for path, methods in spec_paths.items():
+            if "post" not in methods:
+                continue
+            lower = path.lower()
+            if any(k in lower for k in ["login", "token", "auth/"]):
+                if email_login_path is None:
+                    email_login_path = path
+            for provider in ("google", "github", "apple"):
+                if provider in lower:
+                    oauth_paths[provider] = path
 
-        if login_path:
-            _login_path = login_path
-            _base_url = self.base_url
+        _base_url = self.base_url
+        _email_login_path = email_login_path
+        _oauth_paths = oauth_paths
+        _spec = self.spec
 
-            @self.mcp.tool(name="login")
-            async def smart_login(
-                username: str | None = None,
-                password: str | None = None,
-                provider: str | None = None,
-                provider_token: str | None = None,
-            ) -> str:
-                """Faz login na API e configura o token automaticamente.
+        @self.mcp.tool(name="login")
+        async def smart_login(
+            username: str | None = None,
+            password: str | None = None,
+            provider: str | None = None,
+            provider_token: str | None = None,
+        ) -> str:
+            """Faz login na API e configura o token automaticamente.
 
-                Suporta múltiplos fluxos:
-                - Email/senha: informe username e password
-                - OAuth (Google/GitHub/Apple): informe provider e provider_token
-                """
-                url_to_call = _login_path if _login_path.startswith("/") else f"/{_login_path}"
-
-                if provider and provider_token:
-                    payload = {"provider": provider, "token": provider_token}
-                elif username and password:
-                    payload = {"username": username, "password": password}
+            Suporta múltiplos fluxos:
+            - Email/senha: informe username e password
+            - OAuth (Google/GitHub/Apple): informe provider e provider_token
+            """
+            if provider and provider_token:
+                provider_lower = provider.lower()
+                oauth_path = _oauth_paths.get(provider_lower)
+                if oauth_path:
+                    url_to_call = oauth_path if oauth_path.startswith("/") else f"/{oauth_path}"
+                elif _email_login_path:
+                    url_to_call = _email_login_path if _email_login_path.startswith("/") else f"/{_email_login_path}"
                 else:
-                    return "⚠️ Informe username+password (email/senha) ou provider+provider_token (OAuth)."
+                    url_to_call = f"/auth/{provider_lower}"
 
+                payload_candidates = [
+                    {"token": provider_token},
+                    {"access_token": provider_token},
+                    {"id_token": provider_token},
+                    {"code": provider_token},
+                    {"credential": provider_token},
+                ]
+                schema = self._get_body_schema(url_to_call)
+                if schema:
+                    props = schema.get("properties", {})
+                    if props:
+                        body_key = next(iter(props), None)
+                        if body_key:
+                            payload_candidates.insert(0, {body_key: provider_token})
+
+                async with httpx.AsyncClient(base_url=_base_url) as auth_client:
+                    for payload in payload_candidates:
+                        for attempt in range(2):
+                            if attempt == 0:
+                                resp = await auth_client.post(url_to_call, json=payload)
+                            else:
+                                resp = await auth_client.post(url_to_call, data=payload)
+                            if resp.status_code in (200, 201):
+                                data = resp.json()
+                                token = data.get("access_token") or data.get("token") or data.get("jwt") or data.get("id_token")
+                                if token:
+                                    self.token = token
+                                    return "✅ Login realizado com sucesso!"
+                                return "⚠️ Login OK, mas token não encontrado."
+                            if resp.status_code not in (400, 401, 422):
+                                return f"❌ Erro ({resp.status_code}): {resp.text}"
+                    return f"❌ Erro (401): Nenhum formato de payload funcionou."
+            elif username and password:
+                if not _email_login_path:
+                    return "⚠️ Nenhum endpoint de login encontrado na spec."
+                url_to_call = _email_login_path if _email_login_path.startswith("/") else f"/{_email_login_path}"
+                payload = {"username": username, "password": password}
                 async with httpx.AsyncClient(base_url=_base_url) as auth_client:
                     resp = await auth_client.post(url_to_call, json=payload)
                     if resp.status_code == 422:
                         resp = await auth_client.post(url_to_call, data=payload)
-
                     if resp.status_code == 200:
                         data = resp.json()
                         token = data.get("access_token") or data.get("token") or data.get("jwt")
@@ -198,6 +255,8 @@ class MCPServerManager:
                             return "✅ Login realizado com sucesso!"
                         return "⚠️ Login OK, mas token não encontrado."
                     return f"❌ Erro ({resp.status_code}): {resp.text}"
+            else:
+                return "⚠️ Informe username+password (email/senha) ou provider+provider_token (OAuth)."
 
         @self.mcp.tool()
         async def set_token(token: str) -> str:
