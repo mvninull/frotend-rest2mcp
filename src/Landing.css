@@ -84,8 +84,18 @@
         text-transform: uppercase;
         transition: color 0.2s;
       }
-      .nav-links a:hover {
+      .nav-links a:hover,
+      .nav-links .nav-link-btn:hover {
         color: var(--ink);
+      }
+      .nav-links .nav-link-btn {
+        background: none;
+        border: none;
+        color: var(--muted);
+        font: inherit;
+        cursor: pointer;
+        padding: 0;
+        transition: color 0.2s;
       }
 
       /* ─── HERO ─── */
@@ -1247,4 +1257,12 @@
       }
       .auth-submit .spinner .spinner-svg {
         stroke: #ffffff;
+      }
+
+      .client-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+        margin-bottom: 0.75rem;
       }

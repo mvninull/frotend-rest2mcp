@@ -6,8 +6,8 @@
   let currentRoute = 'landing';
 
   function handleRoute() {
-    const hash = window.location.hash;
-    if (hash.includes('#/dashboard')) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('page') === 'dashboard') {
       currentRoute = 'dashboard';
     } else {
       currentRoute = 'landing';
@@ -15,21 +15,19 @@
   }
 
   onMount(() => {
-    // Escuta alterações de rota
-    window.addEventListener('hashchange', handleRoute);
-    handleRoute(); // Verificação inicial
+    window.addEventListener('popstate', handleRoute);
+    handleRoute();
 
-    // Interceta cliques em links para navegação SPA fluida
     const handleLinkClick = (e) => {
       const anchor = e.target.closest('a');
       if (anchor && anchor.href) {
         const href = anchor.getAttribute('href') || '';
-        if (href.endsWith('dashboard.html') || href === 'dashboard.html') {
+        const url = new URL(href, window.location.origin);
+        const params = new URLSearchParams(url.search);
+        if (params.get('page') === 'dashboard') {
           e.preventDefault();
-          window.location.hash = '#/dashboard';
-        } else if (href.endsWith('index.html') || href === 'index.html' || href === '/') {
-          e.preventDefault();
-          window.location.hash = '#/';
+          window.history.pushState({}, '', href);
+          handleRoute();
         }
       }
     };
@@ -37,7 +35,7 @@
     document.addEventListener('click', handleLinkClick);
 
     return () => {
-      window.removeEventListener('hashchange', handleRoute);
+      window.removeEventListener('popstate', handleRoute);
       document.removeEventListener('click', handleLinkClick);
     };
   });
