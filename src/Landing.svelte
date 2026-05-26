@@ -13,6 +13,8 @@
       const API_BASE = (
         localStorage.getItem("api_base") || "http://localhost:8080"
       ).replace(/\/+$/, "");
+      const STRIPE_PUBLISHABLE_KEY = "pk_test_51TbKmaQdlPUKQK2wfBNfhgwltyLsxwfV2smHoPIxyp15rqsEjNbUM0nV1rmyZ2DFQHGm7Ee0RHAy2gzerqGJ5MJA00VAAqjNDO";
+      const STRIPE_PRO_PRICE_ID = "price_1TbKy7QdlPUKQK2wQmXUzWOM";
 
       function showLoading(btn) {
         if (!btn) return;
@@ -117,7 +119,7 @@
             closeLoginModal();
             if (localStorage.getItem("pending_pro")) {
               localStorage.removeItem("pending_pro");
-              setTimeout(showPayPalModal, 300);
+              setTimeout(handleStripePro, 300);
             } else {
               window.history.pushState({}, '', '?page=dashboard'); window.dispatchEvent(new PopStateEvent('popstate'));
             }
@@ -159,7 +161,7 @@
               localStorage.removeItem("pending_pro");
               restoreSession();
               closeLoginModal();
-              setTimeout(showPayPalModal, 300);
+              setTimeout(handleStripePro, 300);
             } else {
               restoreSession();
             }
@@ -242,34 +244,54 @@
         document.getElementById("loginModal").classList.remove("open");
       }
 
-      let paypalRendered = false;
-      function showPayPalModal() {
-        document.getElementById("paypalModal").classList.add("open");
-        const ppc = document.getElementById("paypal-button-container-landing");
-        if (!ppc) return;
-        ppc.style.display = "block";
-        if (typeof paypal !== "undefined" && !paypalRendered) {
-          paypalRendered = true;
-          paypal.Buttons({
-            createSubscription: function(data, actions) {
-              return actions.subscription.create({
-                plan_id: "P-26B313696D799031LNIFNUDQ",
-                custom_id: localStorage.getItem("supabase_user_id") || ""
-              });
-            },
-            onApprove: function(data) {
-              window.showAppAlert("Subscrição ativada!");
-              document.getElementById("paypalModal").classList.remove("open");
-            },
-            onError: function(err) {
-              console.error("PayPal error:", err);
-              window.showAppAlert("Erro ao processar pagamento.");
-            }
-          }).render("#paypal-button-container-landing");
+      async function handleStripePro(isRetry = false) {
+        if (!localStorage.getItem("supabase_token")) {
+          localStorage.setItem("pending_pro", "true");
+          openLoginModal();
+          return;
         }
-      }
-      function closePayPalModal() {
-        document.getElementById("paypalModal").classList.remove("open");
+        const btn = document.querySelector('#pricing .btn-primary') || document.querySelector('.sub-upgrade-btn');
+        if (btn) { btn.disabled = true; btn.textContent = "A redirecionar..."; }
+        try {
+          const payload = {
+            price_id: STRIPE_PRO_PRICE_ID,
+            user_id: localStorage.getItem("supabase_user_id"),
+            success_url: window.location.origin + "/?page=dashboard",
+            cancel_url: window.location.origin
+          };
+          const endpoints = [
+            `${API_BASE}/v1/checkout-session`,
+            `${API_BASE}/v1/stripe/create-checkout-session`,
+          ];
+          for (const url of endpoints) {
+            try {
+              const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              if (resp.ok) {
+                const data = await resp.json();
+                if (data.url) {
+                  window.location.href = data.url;
+                  return;
+                }
+                if (data.sessionId || data.session_id) {
+                  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+                  const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId || data.session_id });
+                  if (error) throw new Error(error.message);
+                  return;
+                }
+                throw new Error("Resposta inesperada do servidor");
+              }
+            } catch (_) {}
+          }
+          throw new Error("Nenhum endpoint de checkout disponível");
+        } catch (err) {
+          console.error("Stripe error:", err);
+          window.showAppAlert("Erro ao iniciar pagamento: " + (err.message || err));
+        }
+        if (btn) { btn.disabled = false; btn.textContent = "Assinar Pro"; }
       }
 
       function handleFreePlan() {
@@ -280,12 +302,7 @@
         }
       }
       function handleProPlan() {
-        if (localStorage.getItem("supabase_token")) {
-          showPayPalModal();
-        } else {
-          localStorage.setItem("pending_pro", "true");
-          openLoginModal();
-        }
+        handleStripePro();
       }
 
       // Configura os botões da UI para abrirem o modal
@@ -313,8 +330,7 @@
       window.openLoginModal = openLoginModal;
       window.closeLoginModal = closeLoginModal;
       window.loginWithEmail = loginWithEmail;
-      window.showPayPalModal = showPayPalModal;
-      window.closePayPalModal = closePayPalModal;
+      window.handleStripePro = handleStripePro;
       window.handleFreePlan = handleFreePlan;
       window.handleProPlan = handleProPlan;
       window.scrollToSection = (id) => {
@@ -544,9 +560,9 @@
           </div>
           <div class="feat-card">
             <div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.6" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
-            <h3>Subscrições PayPal</h3>
+            <h3>Pagamentos Seguros (Stripe)</h3>
             <p>
-              Plano Pro com pagamentos recorrentes via PayPal. Gestão automática
+              Plano Pro com pagamentos recorrentes via Stripe. Gestão automática
               de planos, limites e notificações webhook.
             </p>
           </div>
@@ -731,7 +747,7 @@
             <h3>Como funciona o plano Pro?</h3>
           </div>
           <div class="qs-step-body">
-            <p>O plano Pro custa $9.90/mês e dá acesso a 10 servidores, logs completos, 100 req/min, prioridade alta e suporte a APIs privadas via tunnel. Pagamento via PayPal com subscrição mensal.</p>
+            <p>O plano Pro custa $9.90/mês e dá acesso a 10 servidores, logs completos, 100 req/min, prioridade alta e suporte a APIs privadas via tunnel. Pagamento via Stripe com subscrição mensal.</p>
           </div>
         </div>
       </div>
@@ -896,21 +912,7 @@
       </div>
     </div>
 
-    <!-- PAYPAL SUBSCRIPTION MODAL -->
-    <div class="modal-overlay" id="paypalModal">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h3>Assinar Pro</h3>
-          <p class="modal-sub">Finalize a sua subscrição mensal</p>
-        </div>
-        <div class="social-login-container">
-          <div id="paypal-button-container-landing" style="display:block; min-height:200px;"></div>
-        </div>
-        <div class="modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: center;">
-          <button class="btn-cancel" onclick="closePayPalModal()">Cancelar</button>
-        </div>
-      </div>
-    </div>
+<!-- Stripe Checkout é redirect-based, sem modal -->
 
     <!-- MODAL ESQUECI A PALAVRA-PASSE -->
     <div class="modal-overlay" id="forgotPasswordModal">

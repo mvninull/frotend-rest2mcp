@@ -251,30 +251,49 @@
         if (upg) upg.style.display = isPro ? "none" : "block";
       }
 
-      let paypalRendered = false;
-      function showPayPal() {
-        const ppc = document.getElementById("paypal-button-container");
-        if (!ppc) return;
-        ppc.style.display = "block";
-        if (typeof paypal !== "undefined" && currentUser && !paypalRendered) {
-          paypalRendered = true;
-          paypal.Buttons({
-            createSubscription: function(data, actions) {
-              return actions.subscription.create({
-                plan_id: "P-26B313696D799031LNIFNUDQ",
-                custom_id: currentUser.id,
+      async function handleStripePro() {
+        if (!currentUser) return;
+        const btn = document.getElementById("subUpgradeBtn");
+        if (btn) { btn.disabled = true; btn.textContent = "A redirecionar..."; }
+        const STRIPE_PUBLISHABLE_KEY = "pk_test_51TbKmaQdlPUKQK2wfBNfhgwltyLsxwfV2smHoPIxyp15rqsEjNbUM0nV1rmyZ2DFQHGm7Ee0RHAy2gzerqGJ5MJA00VAAqjNDO";
+        const STRIPE_PRO_PRICE_ID = "price_1TbKy7QdlPUKQK2wQmXUzWOM";
+        try {
+          const endpoints = [
+            `${API_BASE}/v1/checkout-session`,
+            `${API_BASE}/v1/stripe/create-checkout-session`,
+          ];
+          const payload = {
+            price_id: STRIPE_PRO_PRICE_ID,
+            user_id: currentUser.id,
+            success_url: window.location.origin + "/?page=dashboard",
+            cancel_url: window.location.origin
+          };
+          for (const url of endpoints) {
+            try {
+              const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
               });
-            },
-            onApprove: function(data) {
-              window.showAppAlert("Subscrição ativada!");
-              document.getElementById("paypalModal").classList.remove("open");
-            },
-            onError: function(err) {
-              console.error("PayPal error:", err);
-              window.showAppAlert("Erro ao processar pagamento.");
-            },
-          }).render("#paypal-button-container");
+              if (resp.ok) {
+                const data = await resp.json();
+                if (data.url) { window.location.href = data.url; return; }
+                if (data.sessionId || data.session_id) {
+                  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+                  const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId || data.session_id });
+                  if (error) throw new Error(error.message);
+                  return;
+                }
+                throw new Error("Resposta inesperada do servidor");
+              }
+            } catch (_) {}
+          }
+          throw new Error("Nenhum endpoint de checkout disponível");
+        } catch (err) {
+          console.error("Stripe error:", err);
+          window.showAppAlert("Erro: " + (err.message || err));
         }
+        if (btn) { btn.disabled = false; btn.textContent = "Assinar Pro — $9.90/mês"; }
       }
 
       // ─── API ───────────────────────────────────────────────
@@ -1213,7 +1232,7 @@
       window.loadServers = loadServers;
       window.switchLogServer = switchLogServer;
       window.debouncePoll = debouncePoll;
-        window.showPayPal = showPayPal;
+        window.handleStripePro = handleStripePro;
         window.pollLogs = pollLogs;
         window.setMergeTab = setMergeTab;
         window.openMergeModalFromMenu = openMergeModalFromMenu;
@@ -1441,7 +1460,7 @@
         window.loadServers = loadServers;
         window.switchLogServer = switchLogServer;
         window.debouncePoll = debouncePoll;
-        window.showPayPal = showPayPal;
+        window.handleStripePro = handleStripePro;
         window.pollLogs = pollLogs;
         window.openResetPasswordModal = openResetPasswordModal;
         window.closeResetPasswordModal = closeResetPasswordModal;
@@ -1550,9 +1569,8 @@
             <div class="sub-quota"><span>Servidores</span><span class="val" id="subServers">0 / 1</span></div>
             <div class="sub-quota"><span>RPM</span><span class="val" id="subRPM">10</span></div>
             <div class="sub-upgrade" id="subUpgrade">
-              <button class="sub-upgrade-btn" onclick="showPayPal()">Assinar Pro — $9.90/mês</button>
+              <button class="sub-upgrade-btn" id="subUpgradeBtn" onclick="handleStripePro()">Assinar Pro — $9.90/mês</button>
             </div>
-            <div id="paypal-button-container" style="display:none"></div>
           </div>
         </div>
 
