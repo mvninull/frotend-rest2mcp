@@ -2,6 +2,15 @@
   import { onMount } from 'svelte';
   import './Landing.css';
 
+  window.sendContactEmail = function() {
+    const name = document.getElementById('contact-name')?.value || '';
+    const email = document.getElementById('contact-email')?.value || '';
+    const subject = document.getElementById('contact-subject')?.value || '';
+    const message = document.getElementById('contact-message')?.value || '';
+    const body = `Nome: ${name}\nEmail de resposta: ${email}\n\nMensagem:\n${message}`;
+    window.location.href = `mailto:m4codexp@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
   onMount(() => {
 
 
@@ -13,8 +22,6 @@
       const API_BASE = (
         localStorage.getItem("api_base") || "http://localhost:8080"
       ).replace(/\/+$/, "");
-      const STRIPE_PUBLISHABLE_KEY = "pk_test_51TbKmaQdlPUKQK2wfBNfhgwltyLsxwfV2smHoPIxyp15rqsEjNbUM0nV1rmyZ2DFQHGm7Ee0RHAy2gzerqGJ5MJA00VAAqjNDO";
-      const STRIPE_PRO_PRICE_ID = "price_1TbKy7QdlPUKQK2wQmXUzWOM";
 
       function showLoading(btn) {
         if (!btn) return;
@@ -119,7 +126,7 @@
             closeLoginModal();
             if (localStorage.getItem("pending_pro")) {
               localStorage.removeItem("pending_pro");
-              setTimeout(handleStripePro, 300);
+              setTimeout(showPayPalModal, 300);
             } else {
               window.history.pushState({}, '', '?page=dashboard'); window.dispatchEvent(new PopStateEvent('popstate'));
             }
@@ -161,7 +168,7 @@
               localStorage.removeItem("pending_pro");
               restoreSession();
               closeLoginModal();
-              setTimeout(handleStripePro, 300);
+              setTimeout(showPayPalModal, 300);
             } else {
               restoreSession();
             }
@@ -205,24 +212,17 @@
           return;
         }
         if (btn) { btn.disabled = true; btn.textContent = "A enviar..."; }
-        try {
-          const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '?page=dashboard&reset=password'
-          });
-          if (!error) {
-            window.showAppAlert("Email enviado! Verifique a sua caixa de entrada (e spam).");
-            closeForgotPasswordModal();
-            if (btn) { btn.disabled = false; btn.textContent = "Enviar Email"; }
-            return;
-          }
-          console.error("Supabase resetPasswordForEmail error:", error);
-        } catch (e) {
-          console.error("Supabase resetPasswordForEmail exception:", e);
-        }
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '?page=dashboard&reset=password'
+        });
         if (btn) { btn.disabled = false; btn.textContent = "Enviar Email"; }
-        const msg = "Erro ao enviar email de recuperação. Verifique se o Gmail App Password está correta no Supabase ou envie um email para m4codexp@gmail.com com o assunto 'Recuperar Senha' informando o seu email de registo.";
-        if (errorEl) errorEl.textContent = msg;
-        window.showAppAlert(msg);
+        if (error) {
+          if (errorEl) errorEl.textContent = error.message;
+          window.showAppAlert("Erro ao enviar email: " + error.message);
+        } else {
+          window.showAppAlert("Email enviado! Verifique a sua caixa de entrada (e spam).");
+          closeForgotPasswordModal();
+        }
       }
       window.sendForgotPasswordEmail = sendForgotPasswordEmail;
 
@@ -244,54 +244,41 @@
         document.getElementById("loginModal").classList.remove("open");
       }
 
-      async function handleStripePro(isRetry = false) {
-        if (!localStorage.getItem("supabase_token")) {
-          localStorage.setItem("pending_pro", "true");
-          openLoginModal();
-          return;
-        }
-        const btn = document.querySelector('#pricing .btn-primary') || document.querySelector('.sub-upgrade-btn');
-        if (btn) { btn.disabled = true; btn.textContent = "A redirecionar..."; }
-        try {
-          const payload = {
-            price_id: STRIPE_PRO_PRICE_ID,
-            user_id: localStorage.getItem("supabase_user_id"),
-            success_url: window.location.origin + "/?page=dashboard",
-            cancel_url: window.location.origin
-          };
-          const endpoints = [
-            `${API_BASE}/v1/checkout-session`,
-            `${API_BASE}/v1/stripe/create-checkout-session`,
-          ];
-          for (const url of endpoints) {
-            try {
-              const resp = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-              });
-              if (resp.ok) {
-                const data = await resp.json();
-                if (data.url) {
-                  window.location.href = data.url;
-                  return;
-                }
-                if (data.sessionId || data.session_id) {
-                  const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
-                  const { error } = await stripe.redirectToCheckout({ sessionId: data.sessionId || data.session_id });
-                  if (error) throw new Error(error.message);
-                  return;
-                }
-                throw new Error("Resposta inesperada do servidor");
-              }
-            } catch (_) {}
+      let paypalRendered = false;
+      async function showPayPalModal() {
+        document.getElementById("paypalModal").classList.add("open");
+        const ppc = document.getElementById("paypal-button-container-landing");
+        if (!ppc) return;
+        ppc.style.display = "block";
+        if (typeof paypal === "undefined" || paypalRendered) return;
+        paypalRendered = true;
+        const API_BASE = (localStorage.getItem("api_base") || "http://localhost:8080").replace(/\/+$/, "");
+        const token = localStorage.getItem("supabase_token") || "";
+        paypal.Buttons({
+          createSubscription: async function () {
+            const resp = await fetch(`${API_BASE}/v1/paypal/subscription`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+            });
+            if (!resp.ok) throw new Error("Falha ao criar subscrição");
+            const sub = await resp.json();
+            return sub.id;
+          },
+          onApprove: function(data) {
+            window.showAppAlert("Subscrição ativada!");
+            document.getElementById("paypalModal").classList.remove("open");
+          },
+          onError: function(err) {
+            console.error("PayPal error:", err);
+            window.showAppAlert("Erro ao processar pagamento.");
           }
-          throw new Error("Nenhum endpoint de checkout disponível");
-        } catch (err) {
-          console.error("Stripe error:", err);
-          window.showAppAlert("Erro ao iniciar pagamento: " + (err.message || err));
-        }
-        if (btn) { btn.disabled = false; btn.textContent = "Assinar Pro"; }
+        }).render("#paypal-button-container-landing");
+      }
+      function closePayPalModal() {
+        document.getElementById("paypalModal").classList.remove("open");
       }
 
       function handleFreePlan() {
@@ -302,7 +289,12 @@
         }
       }
       function handleProPlan() {
-        handleStripePro();
+        if (localStorage.getItem("supabase_token")) {
+          showPayPalModal();
+        } else {
+          localStorage.setItem("pending_pro", "true");
+          openLoginModal();
+        }
       }
 
       // Configura os botões da UI para abrirem o modal
@@ -330,54 +322,13 @@
       window.openLoginModal = openLoginModal;
       window.closeLoginModal = closeLoginModal;
       window.loginWithEmail = loginWithEmail;
-      window.handleStripePro = handleStripePro;
+      window.showPayPalModal = showPayPalModal;
+      window.closePayPalModal = closePayPalModal;
       window.handleFreePlan = handleFreePlan;
       window.handleProPlan = handleProPlan;
       window.scrollToSection = (id) => {
         const el = document.getElementById(id);
         if (el) el.scrollIntoView({ behavior: 'smooth' });
-      };
-
-      window.sendContactEmail = async function() {
-        const btn = document.querySelector('#contacts .btn-primary');
-        const name = document.getElementById('contact-name')?.value?.trim();
-        const email = document.getElementById('contact-email')?.value?.trim();
-        const subject = document.getElementById('contact-subject')?.value?.trim();
-        const message = document.getElementById('contact-message')?.value?.trim();
-        if (!name || !email || !subject || !message) {
-          window.showAppAlert("Preencha todos os campos.");
-          return;
-        }
-        if (btn) { btn.disabled = true; btn.textContent = "A enviar..."; }
-        try {
-          const resp = await fetch(`${SUPABASE_URL}/rest/v1/contacts`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify({
-              name, email, subject, message,
-              created_at: new Date().toISOString()
-            })
-          });
-          if (resp.ok) {
-            document.getElementById('contact-name').value = '';
-            document.getElementById('contact-email').value = '';
-            document.getElementById('contact-subject').value = '';
-            document.getElementById('contact-message').value = '';
-            window.showAppAlert("Mensagem enviada com sucesso! Obrigado pelo contacto.");
-          } else {
-            const text = await resp.text().catch(() => '');
-            window.showAppAlert(`Erro ${resp.status}: ${text || 'Falha ao enviar'}`);
-          }
-        } catch (e) {
-          console.error("sendContactEmail error:", e);
-          window.showAppAlert("Erro de rede. Verifica se o Supabase está acessível.");
-        }
-        if (btn) { btn.disabled = false; btn.textContent = "Enviar Mensagem"; }
       };
     
   });
@@ -560,9 +511,9 @@
           </div>
           <div class="feat-card">
             <div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.6" stroke-linecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>
-            <h3>Pagamentos Seguros (Stripe)</h3>
+            <h3>Subscrições PayPal</h3>
             <p>
-              Plano Pro com pagamentos recorrentes via Stripe. Gestão automática
+              Plano Pro com pagamentos recorrentes via PayPal. Gestão automática
               de planos, limites e notificações webhook.
             </p>
           </div>
@@ -747,7 +698,7 @@
             <h3>Como funciona o plano Pro?</h3>
           </div>
           <div class="qs-step-body">
-            <p>O plano Pro custa $9.90/mês e dá acesso a 10 servidores, logs completos, 100 req/min, prioridade alta e suporte a APIs privadas via tunnel. Pagamento via Stripe com subscrição mensal.</p>
+            <p>O plano Pro custa $9.90/mês e dá acesso a 10 servidores, logs completos, 100 req/min, prioridade alta e suporte a APIs privadas via tunnel. Pagamento via PayPal com subscrição mensal.</p>
           </div>
         </div>
       </div>
@@ -769,7 +720,7 @@
           </div>
           <input type="text" id="contact-subject" placeholder="Assunto da mensagem" class="contact-input" />
           <textarea id="contact-message" placeholder="Escreva a sua mensagem aqui..." class="contact-textarea"></textarea>
-          <button type="button" class="btn-primary" id="contactSubmitBtn" style="align-self: flex-start; padding: 12px 30px; cursor: pointer; border: none;" onclick="sendContactEmail()">
+          <button type="button" class="btn-primary" style="align-self: flex-start; padding: 12px 30px; cursor: pointer; border: none;" onclick="sendContactEmail()">
             Enviar Mensagem
           </button>
         </div>
@@ -912,7 +863,21 @@
       </div>
     </div>
 
-<!-- Stripe Checkout é redirect-based, sem modal -->
+    <!-- PAYPAL SUBSCRIPTION MODAL -->
+    <div class="modal-overlay" id="paypalModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>Assinar Pro</h3>
+          <p class="modal-sub">Finalize a sua subscrição mensal</p>
+        </div>
+        <div class="social-login-container">
+          <div id="paypal-button-container-landing" style="display:block; min-height:200px;"></div>
+        </div>
+        <div class="modal-actions" style="margin-top: 1.5rem; display: flex; justify-content: center;">
+          <button class="btn-cancel" onclick="closePayPalModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- MODAL ESQUECI A PALAVRA-PASSE -->
     <div class="modal-overlay" id="forgotPasswordModal">
